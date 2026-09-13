@@ -452,7 +452,14 @@
         <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Falta aceite para mañana..."></textarea>
       </div>
       <button class="btn-primary" onclick="generarReporteCocina()">Enviar Inventario por WhatsApp</button>
-    </section>
+    </<!-- MÓDULO POS MESAS -->
+<section id="sec-pos" class="hidden">
+  <div id="pos-container"></div>
+</section>
+<div class="nav-item" onclick="document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById('sec-pos').classList.remove('hidden');">
+  <span>📋</span>
+  <small>POS</small>
+</div>
 
   </div>
 
@@ -462,7 +469,7 @@
     <div class="nav-item" onclick="navegarBarra('desempeno')"><span>📈</span> Métricas</div>
     <div class="nav-item" onclick="navegarBarra('finanzas')"><span>💵</span> Finanzas</div>
   </nav>
-
+<script src="pos.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
