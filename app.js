@@ -52,27 +52,47 @@ function guardarBD() {
   localStorage.setItem('chamos_movimientos', JSON.stringify(db.movimientos));
 }
 
+// AL CARGAR LA PÁGINA: AUTORECORDAR USUARIO
+window.addEventListener('DOMContentLoaded', () => {
+  const usuarioGuardado = localStorage.getItem('chamos_usuario_recordado');
+  if (usuarioGuardado) {
+    document.getElementById('login-usuario').value = usuarioGuardado;
+    document.getElementById('login-recordar').checked = true;
+  }
+});
+
 // --- AUTENTICACIÓN ---
 function iniciarSesion(e) {
   e.preventDefault();
   const user = document.getElementById('login-usuario').value.trim();
   const pin = document.getElementById('login-pin').value.trim();
+  const recordar = document.getElementById('login-recordar').checked;
 
   const usuario = db.usuarios.find(u => u.usuario.toLowerCase() === user.toLowerCase() && u.pin === pin);
 
   if (usuario) {
     db.usuarioActual = usuario;
+
+    if (recordar) {
+      localStorage.setItem('chamos_usuario_recordado', user);
+    } else {
+      localStorage.removeItem('chamos_usuario_recordado');
+    }
+
     document.getElementById('sec-login').classList.add('hidden');
     document.getElementById('btn-logout').classList.remove('hidden');
 
     if (usuario.rol === 'admin') {
+      document.getElementById('header-titulo').innerText = "Los Chamos Admin";
       document.getElementById('sec-admin').classList.remove('hidden');
       document.getElementById('app-nav').classList.remove('hidden');
       cargarAdminHub();
     } else if (usuario.rol === 'encargada') {
+      document.getElementById('header-titulo').innerText = "Los Chamos Encargada";
       document.getElementById('sec-encargada').classList.remove('hidden');
-      iniciarAperturaEncargada();
+      volverEncargadaHub();
     } else if (usuario.rol === 'cocina') {
+      document.getElementById('header-titulo').innerText = "Los Chamos Cocina";
       document.getElementById('sec-cocina').classList.remove('hidden');
       cargarModuloCocina();
     }
@@ -89,6 +109,7 @@ function cerrarSesion() {
   document.getElementById('sec-cocina').classList.add('hidden');
   document.getElementById('app-nav').classList.add('hidden');
   document.getElementById('btn-logout').classList.add('hidden');
+  document.getElementById('login-pin').value = '';
 }
 
 // --- MÓDULO ADMIN HUB ---
@@ -142,7 +163,54 @@ function navegarBarra(vista) {
   verSubModuloAdmin(vista);
 }
 
-// --- SUBMÓDULOS ADMIN ---
+// --- EDICIÓN Y GESTIÓN COMPLETA DE USUARIOS / PINs ---
+function renderListaUsuariosAdmin() {
+  document.getElementById('admin-lista-usuarios').innerHTML = db.usuarios.map((u, index) => `
+    <div class="inner-card" style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong>👤 ${u.usuario} (${u.rol.toUpperCase()})</strong>
+        ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="edit-pin-${index}" value="${u.pin}" style="padding:6px; font-size:0.85rem;" placeholder="PIN">
+        <button class="btn-secondary" onclick="modificarPinUsuario(${index})" style="background:#ea580c; color:white; border:none;">💾 Guardar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function modificarPinUsuario(index) {
+  const nuevoPin = document.getElementById(`edit-pin-${index}`).value.trim();
+  if (!nuevoPin) { alert("⚠️ El PIN no puede estar vacío"); return; }
+  
+  db.usuarios[index].pin = nuevoPin;
+  guardarBD();
+  alert(`✅ PIN del usuario '${db.usuarios[index].usuario}' actualizado exitosamente.`);
+  renderListaUsuariosAdmin();
+}
+
+function agregarNuevoUsuario(e) {
+  e.preventDefault();
+  const nom = document.getElementById('nuevo-user-nombre').value.trim();
+  const pin = document.getElementById('nuevo-user-pin').value.trim();
+  const rol = document.getElementById('nuevo-user-rol').value;
+
+  db.usuarios.push({ usuario: nom, pin, rol });
+  guardarBD();
+  renderListaUsuariosAdmin();
+  e.target.reset();
+  alert("✅ Usuario creado exitosamente");
+}
+
+function eliminarUsuario(index) {
+  if (confirm(`¿Eliminar al usuario ${db.usuarios[index].usuario}?`)) {
+    db.usuarios.splice(index, 1);
+    guardarBD();
+    renderListaUsuariosAdmin();
+  }
+}
+
+// --- OTROS SUBMÓDULOS ADMIN ---
 function renderAlmacenAdmin() {
   const select = document.getElementById('almacen-item-select');
   select.innerHTML = db.almacen.map(i => `<option value="${i.id}">${i.nombre} (${i.stock} ${i.unidad})</option>`).join('');
@@ -169,33 +237,28 @@ function registrarMovimientoAlmacen(e) {
       if (cant > item.stock) { alert(`⚠️ Stock insuficiente en bodega`); return; }
       item.stock -= cant;
     }
-    guardarBD();
-    renderAlmacenAdmin();
-    e.target.reset();
+    guardarBD(); renderAlmacenAdmin(); e.target.reset();
   }
 }
 
 function agregarNuevoItemAlmacen(e) {
   e.preventDefault();
-  const nombre = document.getElementById('nuevo-almacen-nombre').value;
-  const unidad = document.getElementById('nuevo-almacen-unidad').value;
-  const stock = parseFloat(document.getElementById('nuevo-almacen-stock').value) || 0;
-
-  db.almacen.push({ id: Date.now(), nombre, unidad, stock });
-  guardarBD();
-  renderAlmacenAdmin();
-  e.target.reset();
+  db.almacen.push({
+    id: Date.now(),
+    nombre: document.getElementById('nuevo-almacen-nombre').value,
+    unidad: document.getElementById('nuevo-almacen-unidad').value,
+    stock: parseFloat(document.getElementById('nuevo-almacen-stock').value) || 0
+  });
+  guardarBD(); renderAlmacenAdmin(); e.target.reset();
 }
 
 function eliminarItemAlmacen(id) {
   db.almacen = db.almacen.filter(i => i.id !== id);
-  guardarBD();
-  renderAlmacenAdmin();
+  guardarBD(); renderAlmacenAdmin();
 }
 
 function renderFinanzasAdmin() {
-  const cont = document.getElementById('lista-movimientos-diarios-finanzas');
-  cont.innerHTML = db.movimientos.map(m => {
+  document.getElementById('lista-movimientos-diarios-finanzas').innerHTML = db.movimientos.map(m => {
     const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0) + (m.ingresos.Datáfono || 0);
     const totGastos = (m.gastos || []).reduce((acc, g) => acc + g.valor, 0);
     return `
@@ -232,11 +295,7 @@ function registrarMovimientoAdmin(e) {
   if (tipo === 'ingreso') movHoy.ingresos[cuenta] = (movHoy.ingresos[cuenta] || 0) + valor;
   else movHoy.gastos.push({ concepto: `[ADMIN] ${concepto}`, valor, cuenta });
 
-  guardarBD();
-  renderFinanzasAdmin();
-  cargarAdminHub();
-  alert("✅ Registrado");
-  e.target.reset();
+  guardarBD(); renderFinanzasAdmin(); cargarAdminHub(); alert("✅ Registrado"); e.target.reset();
 }
 
 function renderDesempenoAdmin() {
@@ -356,37 +415,36 @@ function eliminarTarea(id) {
   guardarBD(); renderListaChecklistAdmin();
 }
 
-function renderListaUsuariosAdmin() {
-  document.getElementById('admin-lista-usuarios').innerHTML = db.usuarios.map((u, index) => `
-    <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${u.usuario}</strong> (${u.rol}) | PIN: ${u.pin}</div>
-      ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
-    </div>
-  `).join('');
-}
-
-function agregarNuevoUsuario(e) {
-  e.preventDefault();
-  db.usuarios.push({
-    usuario: document.getElementById('nuevo-user-nombre').value.trim(),
-    pin: document.getElementById('nuevo-user-pin').value.trim(),
-    rol: document.getElementById('nuevo-user-rol').value
-  });
-  guardarBD(); renderListaUsuariosAdmin(); e.target.reset();
-}
-
-function eliminarUsuario(index) {
-  db.usuarios.splice(index, 1);
-  guardarBD(); renderListaUsuariosAdmin();
-}
-
-// --- MÓDULO ENCARGADA (NUEVO FLUJO CON ALERTA AL ADMIN) ---
-function iniciarAperturaEncargada() {
-  document.getElementById('encargada-apertura-paso1').classList.remove('hidden');
+// --- MÓDULO ENCARGADA (NUEVO DISEÑO TARJETERÍA) ---
+function volverEncargadaHub() {
+  document.getElementById('encargada-hub').classList.remove('hidden');
+  document.getElementById('encargada-apertura-paso1').classList.add('hidden');
   document.getElementById('encargada-apertura-paso2').classList.add('hidden');
   document.getElementById('encargada-apertura-paso3').classList.add('hidden');
-  document.getElementById('encargada-step-operacion').classList.add('hidden');
+  document.getElementById('encargada-view-gasto').classList.add('hidden');
+  document.getElementById('encargada-view-entrada').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso3').classList.add('hidden');
+}
 
+function verSubModuloEncargada(modulo) {
+  document.getElementById('encargada-hub').classList.add('hidden');
+
+  if (modulo === 'apertura') {
+    iniciarAperturaEncargada();
+  } else if (modulo === 'gasto') {
+    document.getElementById('encargada-view-gasto').classList.remove('hidden');
+  } else if (modulo === 'entrada') {
+    document.getElementById('encargada-view-entrada').classList.remove('hidden');
+    renderFormularioEntradaMasivaBebidas();
+  } else if (modulo === 'cierre') {
+    irACierrePaso1Bebidas();
+  }
+}
+
+function iniciarAperturaEncargada() {
+  document.getElementById('encargada-apertura-paso1').classList.remove('hidden');
   document.getElementById('lista-apertura-bebidas').innerHTML = db.bebidas.map(b => `
     <div class="form-group">
       <label>${b.nombre} (Stock actual: ${b.stock}):</label>
@@ -440,7 +498,6 @@ function finalizarAperturaYNotificarAdmin() {
   db.gastosTurnoActual = [];
   db.entradasBebidasTurno = {};
 
-  // Notificación de Apertura por WhatsApp al Administrador
   let msg = `*🔔 ALERTA DE APERTURA DE TURNO - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
   msg += `*💵 BASES Y SALDOS INICIALES:*\n`;
   msg += `- Efectivo en Caja: $${efec.toLocaleString()}\n`;
@@ -463,25 +520,7 @@ function finalizarAperturaYNotificarAdmin() {
   const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 
-  // Transición a la vista operativa
-  document.getElementById('encargada-apertura-paso3').classList.add('hidden');
-  document.getElementById('encargada-step-operacion').classList.remove('hidden');
-  renderFormularioEntradaMasivaBebidas();
-}
-
-function cambiarSubTabEncargada(tab) {
-  document.getElementById('tab-gasto').classList.remove('active');
-  document.getElementById('tab-entrada').classList.remove('active');
-  document.getElementById('subtab-view-gasto').classList.add('hidden');
-  document.getElementById('subtab-view-entrada').classList.add('hidden');
-
-  if (tab === 'gasto') {
-    document.getElementById('tab-gasto').classList.add('active');
-    document.getElementById('subtab-view-gasto').classList.remove('hidden');
-  } else {
-    document.getElementById('tab-entrada').classList.add('active');
-    document.getElementById('subtab-view-entrada').classList.remove('hidden');
-  }
+  volverEncargadaHub();
 }
 
 function renderFormularioEntradaMasivaBebidas() {
@@ -506,8 +545,12 @@ function guardarEntradasMasivasBebidas() {
     }
   });
 
-  if (cargadas > 0) alert("✅ Se agregaron las bebidas al inventario del turno.");
-  else alert("ℹ️ No ingresaste cantidades.");
+  if (cargadas > 0) {
+    alert("✅ Se agregaron las bebidas al inventario del turno.");
+    volverEncargadaHub();
+  } else {
+    alert("ℹ️ No ingresaste cantidades.");
+  }
 }
 
 function registrarGasto(e) {
@@ -519,11 +562,11 @@ function registrarGasto(e) {
   db.gastosTurnoActual.push({ concepto, valor, cuenta });
   alert(`✅ Gasto registrado ($${valor.toLocaleString()})`);
   e.target.reset();
+  volverEncargadaHub();
 }
 
-// PASO 1 CIERRE: BEBIDAS
+// CIERRE DE TURNO
 function irACierrePaso1Bebidas() {
-  document.getElementById('encargada-step-operacion').classList.add('hidden');
   document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
 
   document.getElementById('lista-cierre-bebidas').innerHTML = db.bebidas.map(b => {
@@ -538,12 +581,6 @@ function irACierrePaso1Bebidas() {
   }).join('');
 }
 
-function volverAOperacion() {
-  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
-  document.getElementById('encargada-step-operacion').classList.remove('hidden');
-}
-
-// PASO 2 CIERRE: INSUMOS
 function irACierrePaso2Insumos() {
   document.getElementById('encargada-cierre-paso1').classList.add('hidden');
   document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
@@ -561,7 +598,6 @@ function volverACierrePaso1Bebidas() {
   document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
 }
 
-// PASO 3 CIERRE: SALDOS
 function irACierrePaso3Saldos() {
   document.getElementById('encargada-cierre-paso2').classList.add('hidden');
   document.getElementById('encargada-cierre-paso3').classList.remove('hidden');
@@ -572,7 +608,6 @@ function volverACierrePaso2Insumos() {
   document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
 }
 
-// REPORTE FINAL DE CIERRE Y AUDITORÍA COMPLETA
 function generarReporteCierreCompleto() {
   const efecFinal = parseFloat(document.getElementById('cierre-final-efectivo').value) || 0;
   const neqFinal = parseFloat(document.getElementById('cierre-final-nequi').value) || 0;
@@ -592,8 +627,6 @@ function generarReporteCierreCompleto() {
     ventaEstimadaBebidas += totVenta;
 
     resumenBebidas += `• ${b.nombre}: Quedan ${fin} (Vendidas: ${vendidas} = $${totVenta.toLocaleString()})\n`;
-    
-    // Actualizar stock local
     b.stock = fin;
 
     if (fin < b.sugerido) {
@@ -614,7 +647,6 @@ function generarReporteCierreCompleto() {
     }
   });
 
-  // Cálculo del Ingreso Total en Caja
   const totalIngresoEfectivo = efecFinal - db.aperturaDatos.bases.Efectivo;
   const totalIngresoNequi = neqFinal - db.aperturaDatos.bases.Nequi;
   const totalIngresoBancolombia = banFinal - db.aperturaDatos.bases.Bancolombia;
@@ -625,7 +657,6 @@ function generarReporteCierreCompleto() {
 
   const observaciones = document.getElementById('encargada-observaciones').value.trim();
 
-  // Guardar Movimiento en BD
   const fechaActual = new Date();
   const hoyFecha = fechaActual.toLocaleDateString();
 
@@ -640,7 +671,6 @@ function generarReporteCierreCompleto() {
 
   guardarBD();
 
-  // Armar Mensaje de WhatsApp
   let msg = `*📊 CIERRE DE TURNO Y REPORTE OPERATIVO*\n📅 ${hoyFecha}\n\n`;
   msg += `*💵 INGRESO NETO TOTAL DEL RESTAURANTE:*\n`;
   msg += `- Ingreso Efectivo: $${totalIngresoEfectivo.toLocaleString()}\n`;
