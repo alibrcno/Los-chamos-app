@@ -1,0 +1,74 @@
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --accent: #38bdf8;
+  --text: #f8fafc;
+  --border: #334155;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text);
+  margin: 0;
+  padding: 15px;
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.hidden { display: none !important; }
+
+h2, h3 { text-align: center; margin-top: 0; }
+.subtitle { text-align: center; opacity: 0.8; }
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.btn-primary { background: #2563eb; color: white; }
+.btn-secondary { background: #0891b2; color: white; }
+.btn-dark { background: #475569; color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-warning { background: var(--warning); color: black; }
+.btn-back { background: none; border: none; color: var(--accent); font-size: 16px; cursor: pointer; }
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0f172a;
+  color: white;
+  box-sizing: border-box;
+}
+
+.tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+.tab-btn { flex: 1; padding: 10px; background: #334155; border: none; color: white; border-radius: 8px; }
+.tab-btn.active { background: var(--accent); color: #0f172a; font-weight: bold; }
+
+.kpi-container { display: flex; gap: 10px; margin-bottom: 20px; }
+.kpi { flex: 1; background: #0f172a; padding: 10px; border-radius: 10px; text-align: center; }
+.kpi h3 { color: var(--accent); margin: 5px 0 0 0; font-size: 16px; }
+
+.alert { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; margin-top: 10px; }
+.summary-box { background: #0f172a; padding: 15px; border-radius: 10px; margin-top: 15px; }
+.history-list { list-style: none; padding: 0; }
+.history-list li { padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; }

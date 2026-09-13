@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Los Chamos - Control Operativo</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js para las gráficas administrativas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- PANTALLA DE SELECCIÓN DE USUARIO -->
+    <section id="sec-login" class="card">
+      <h2>🍟 Los Chamos</h2>
+      <p class="subtitle">Selecciona tu rol para ingresar:</p>
+      <div class="role-buttons">
+        <button onclick="seleccionarRol('encargada')" class="btn btn-primary">👩‍💼 Encargada (Atención/Bebidas)</button>
+        <button onclick="seleccionarRol('cocina')" class="btn btn-secondary">👨‍🍳 Cocina (Inventario Insumos)</button>
+        <button onclick="seleccionarRol('admin')" class="btn btn-dark">🔐 Administradora</button>
+      </div>
+    </section>
+
+    <!-- MÓDULO ENCARGADA -->
+    <section id="sec-encargada" class="card hidden">
+      <button onclick="volverInicio()" class="btn-back">← Volver</button>
+      <h2>Turno Encargada - Bebidas y Caja</h2>
+      
+      <div class="tabs">
+        <button onclick="cambiarTabEncargada('apertura')" class="tab-btn active">Apertura</button>
+        <button onclick="cambiarTabEncargada('gastos')" class="tab-btn">Compras / Gastos</button>
+        <button onclick="cambiarTabEncargada('cierre')" class="tab-btn">Cierre</button>
+      </div>
+
+      <!-- Tab Apertura -->
+      <div id="tab-apertura" class="tab-content">
+        <h3>Inventario Inicial de Bebidas</h3>
+        <div id="lista-bebidas-inicio"></div>
+        <button onclick="guardarApertura()" class="btn btn-success">Confirmar Apertura de Turno</button>
+        <div id="alerta-discrepancia" class="alert hidden"></div>
+      </div>
+
+      <!-- Tab Gastos y Compras -->
+      <div id="tab-gastos" class="tab-content hidden">
+        <h3>Registrar Gasto o Compras</h3>
+        <form id="form-gasto" onsubmit="registrarGasto(event)">
+          <input type="text" id="gasto-concepto" placeholder="Concepto (ej. Hielo, Factura Coca-Cola)" required>
+          <input type="number" id="gasto-valor" placeholder="Valor en COP ($)" required>
+          <label>
+            <input type="checkbox" id="gasto-es-bebida" onchange="toggleBebidasCompra()"> ¿Incluye compra de bebidas para stock?
+          </label>
+          <div id="compra-bebida-fields" class="hidden">
+            <select id="select-bebida-compra"></select>
+            <input type="number" id="cant-bebida-compra" placeholder="Cantidad comprada">
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar Gasto</button>
+        </form>
+      </div>
+
+      <!-- Tab Cierre -->
+      <div id="tab-cierre" class="tab-content hidden">
+        <h3>Inventario Final de Bebidas</h3>
+        <div id="lista-bebidas-cierre"></div>
+        <h3>Recaudo en Caja</h3>
+        <input type="number" id="cierre-efectivo" placeholder="Efectivo Recaudado ($)">
+        <input type="number" id="cierre-nequi" placeholder="Total Nequi ($)">
+        <input type="number" id="cierre-bancolombia" placeholder="Total Bancolombia ($)">
+        <button onclick="generarReporteCierre()" class="btn btn-warning">Finalizar Turno y Generar Reporte</button>
+        <div id="resumen-cierre" class="summary-box hidden"></div>
+      </div>
+    </section>
+
+    <!-- MÓDULO COCINA -->
+    <section id="sec-cocina" class="card hidden">
+      <button onclick="volverInicio()" class="btn-back">← Volver</button>
+      <h2>🍳 Inventario de Cocina (Cierre Nocturno)</h2>
+      <div id="lista-cocina"></div>
+      <button onclick="generarListaCompras()" class="btn btn-primary">Verificar Mínimos y Generar Lista de Compras</button>
+      <div id="reporte-compras" class="summary-box hidden"></div>
+    </section>
+
+    <!-- MÓDULO ADMINISTRADORA -->
+    <section id="sec-admin" class="card hidden">
+      <button onclick="volverInicio()" class="btn-back">← Volver</button>
+      <h2>📊 Panel de Administradora</h2>
+      
+      <div class="kpi-container">
+        <div class="kpi">
+          <small>Efectivo en Caja</small>
+          <h3 id="saldo-efectivo">$0</h3>
+        </div>
+        <div class="kpi">
+          <small>Nequi</small>
+          <h3 id="saldo-nequi">$0</h3>
+        </div>
+        <div class="kpi">
+          <small>Bancolombia</small>
+          <h3 id="saldo-bancolombia">$0</h3>
+        </div>
+      </div>
+
+      <h3>Rendimiento Semanal (Ingresos vs Gastos)</h3>
+      <div class="chart-container">
+        <canvas id="chartFinanzas"></canvas>
+      </div>
+
+      <h3>Historial de Transacciones</h3>
+      <ul id="lista-historial" class="history-list"></ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
