@@ -30,10 +30,10 @@
     .icon-slate { background: #475569; }
 
     .balance-card { background: #0f172a; color: white; border-radius: 14px; padding: 15px; margin-bottom: 15px; }
-    .balance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; text-align: center; }
-    .balance-item { background: #1e293b; padding: 10px; border-radius: 8px; }
-    .balance-item span { font-size: 0.7rem; color: #94a3b8; display: block; }
-    .balance-item strong { font-size: 0.85rem; color: #38bdf8; }
+    .balance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-top: 10px; text-align: center; }
+    .balance-item { background: #1e293b; padding: 8px; border-radius: 8px; }
+    .balance-item span { font-size: 0.65rem; color: #94a3b8; display: block; }
+    .balance-item strong { font-size: 0.8rem; color: #38bdf8; }
 
     .inner-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
     .form-group { margin-bottom: 10px; }
@@ -44,10 +44,11 @@
     .btn-primary { width: 100%; padding: 12px; background-color: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-top: 10px; }
     .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
 
-    /* Botones Pestaña Encargada */
     .tab-btn-container { display: flex; gap: 10px; margin-bottom: 15px; }
     .tab-btn { flex: 1; padding: 12px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 10px; font-weight: bold; font-size: 0.85rem; color: #475569; cursor: pointer; text-align: center; }
     .tab-btn.active { background: #ea580c; color: white; border-color: #ea580c; }
+
+    .step-badge { background: #ea580c; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; }
 
     .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
     .txt-green { color: #16a34a; font-weight: 600; }
@@ -59,7 +60,7 @@
     .bar-container { background: #e2e8f0; border-radius: 6px; height: 12px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #ea580c; height: 100%; border-radius: 6px; }
 
-    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-around: space-around; padding: 8px 0; z-index: 100; }
+    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
     .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; text-decoration: none; cursor: pointer; }
     .nav-item.active { color: #ea580c; font-weight: bold; }
     .nav-item span { font-size: 1.2rem; }
@@ -99,18 +100,10 @@
         <div class="balance-card">
           <div style="font-size: 0.85rem; color: #94a3b8;">Disponible en Cuentas:</div>
           <div class="balance-grid">
-            <div class="balance-item">
-              <span>Bancolombia</span>
-              <strong id="saldo-bancolombia">$0</strong>
-            </div>
-            <div class="balance-item">
-              <span>Nequi</span>
-              <strong id="saldo-nequi">$0</strong>
-            </div>
-            <div class="balance-item">
-              <span>Efectivo</span>
-              <strong id="saldo-efectivo">$0</strong>
-            </div>
+            <div class="balance-item"><span>Bancolombia</span><strong id="saldo-bancolombia">$0</strong></div>
+            <div class="balance-item"><span>Nequi</span><strong id="saldo-nequi">$0</strong></div>
+            <div class="balance-item"><span>Efectivo</span><strong id="saldo-efectivo">$0</strong></div>
+            <div class="balance-item"><span>Datáfono</span><strong id="saldo-datafono">$0</strong></div>
           </div>
         </div>
 
@@ -119,12 +112,12 @@
           <div class="app-card" onclick="verSubModuloAdmin('almacen')">
             <div class="card-icon icon-slate">📦</div>
             <div class="card-title">Almacén Central</div>
-            <div class="card-desc">Bodega general, compras e ingresos/salidas</div>
+            <div class="card-desc">Bodega general, compras e insumos</div>
           </div>
           <div class="app-card" onclick="verSubModuloAdmin('finanzas')">
             <div class="card-icon icon-green">💵</div>
             <div class="card-title">Caja / Finanzas</div>
-            <div class="card-desc">Registrar ingresos, gastos y arqueo</div>
+            <div class="card-desc">Registrar ingresos y gastos directos</div>
           </div>
           <div class="app-card" onclick="verSubModuloAdmin('desempeno')">
             <div class="card-icon icon-orange">📈</div>
@@ -134,12 +127,12 @@
           <div class="app-card" onclick="verSubModuloAdmin('bebidas')">
             <div class="card-icon icon-blue">🥤</div>
             <div class="card-title">Stock Bebidas</div>
-            <div class="card-desc">Catálogo, precios y stock local</div>
+            <div class="card-desc">Stock sugerido y catálogo de bebidas</div>
           </div>
-          <div class="app-card" onclick="verSubModuloAdmin('cocina')">
-            <div class="card-icon icon-green">🥬</div>
-            <div class="card-title">Insumos Cocina</div>
-            <div class="card-desc">Stock sugerido ideal en cocina</div>
+          <div class="app-card" onclick="verSubModuloAdmin('insumos')">
+            <div class="card-icon icon-purple">🍽️</div>
+            <div class="card-title">Insumos / Doblados</div>
+            <div class="card-desc">Servilletas, vasos, tenedores, etc.</div>
           </div>
           <div class="app-card" onclick="verSubModuloAdmin('checklist')">
             <div class="card-icon icon-amber">📋</div>
@@ -158,50 +151,40 @@
       <div id="admin-view-almacen" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>📦 Almacén y Bodega General</h3>
-
         <div class="inner-card">
           <h4>📥 / 📤 Movimiento de Almacén</h4>
           <form onsubmit="registrarMovimientoAlmacen(event)">
-            <div class="form-group">
-              <label>Seleccionar Ítem:</label>
-              <select id="almacen-item-select"></select>
-            </div>
+            <div class="form-group"><label>Seleccionar Ítem:</label><select id="almacen-item-select"></select></div>
             <div class="form-group">
               <label>Tipo de Operación:</label>
               <select id="almacen-tipo-op">
                 <option value="entrada">📥 Entrada / Compra para Bodega</option>
-                <option value="salida">📤 Salida / Traslado a Cocina o Barra</option>
+                <option value="salida">📤 Salida / Traslado a Local</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Cantidad:</label>
-              <input type="number" id="almacen-cant-op" placeholder="0" required>
-            </div>
+            <div class="form-group"><label>Cantidad:</label><input type="number" id="almacen-cant-op" placeholder="0" required></div>
             <button type="submit" class="btn-primary" style="background-color:#475569;">Registrar Movimiento</button>
           </form>
         </div>
-
         <div class="inner-card">
           <h4>📦 Inventario en Almacén</h4>
           <div id="admin-lista-almacen" style="margin-top:10px;"></div>
         </div>
-
         <form onsubmit="agregarNuevoItemAlmacen(event)" class="inner-card">
           <h4>➕ Crear Nuevo Ítem de Almacén</h4>
-          <input type="text" id="nuevo-almacen-nombre" placeholder="Nombre (Ej: Bulto de Harina, Paca de Agua)" required>
-          <input type="text" id="nuevo-almacen-unidad" placeholder="Unidad (Bulto, Paca, Kg, Cta)" required style="margin-top:5px;">
+          <input type="text" id="nuevo-almacen-nombre" placeholder="Nombre (Ej: Harina, Vasos 12oz)" required>
+          <input type="text" id="nuevo-almacen-unidad" placeholder="Unidad (Bulto, Paca, Paquete)" required style="margin-top:5px;">
           <input type="number" id="nuevo-almacen-stock" placeholder="Stock Inicial en Bodega" required style="margin-top:5px;">
           <button type="submit" class="btn-primary">Guardar Ítem</button>
         </form>
       </div>
 
-      <!-- Sub-módulo: FINANZAS / REGISTRO DIRECTO ADMIN -->
+      <!-- Sub-módulo: FINANZAS ADMIN -->
       <div id="admin-view-finanzas" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>💵 Gestión Financiera Admin</h3>
-
         <div class="inner-card">
-          <h4>💸 Registrar Movimiento Directo (Gasto/Ingreso)</h4>
+          <h4>💸 Registrar Movimiento Directo</h4>
           <form onsubmit="registrarMovimientoAdmin(event)">
             <div class="form-group">
               <label>Tipo:</label>
@@ -210,42 +193,34 @@
                 <option value="ingreso">🟢 Ingreso / Entrada de Dinero</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Concepto:</label>
-              <input type="text" id="admin-fin-concepto" placeholder="Ej: Pago de Proveedor / Arriendo" required>
-            </div>
-            <div class="form-group">
-              <label>Valor ($ COP):</label>
-              <input type="number" id="admin-fin-valor" placeholder="0" required>
-            </div>
+            <div class="form-group"><label>Concepto:</label><input type="text" id="admin-fin-concepto" placeholder="Ej: Arriendo / Pago Proveedor" required></div>
+            <div class="form-group"><label>Valor ($ COP):</label><input type="number" id="admin-fin-valor" placeholder="0" required></div>
             <div class="form-group">
               <label>Cuenta:</label>
               <select id="admin-fin-cuenta">
                 <option value="Efectivo">Efectivo</option>
                 <option value="Nequi">Nequi</option>
                 <option value="Bancolombia">Bancolombia</option>
+                <option value="Datáfono">Datáfono</option>
               </select>
             </div>
             <button type="submit" class="btn-primary">Registrar Operación</button>
           </form>
         </div>
-
         <div class="inner-card">
           <h4>📅 Histórico de Flujo Operativo</h4>
           <div id="lista-movimientos-diarios-finanzas"></div>
         </div>
       </div>
 
-      <!-- Sub-módulo: DESEMPEÑO Y RENDIMIENTO MENSUAL -->
+      <!-- Sub-módulo: DESEMPEÑO -->
       <div id="admin-view-desempeno" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>📈 Análisis de Rendimiento Mensual</h3>
-
         <div class="inner-card">
           <label>Seleccionar Mes:</label>
           <input type="month" id="desempeno-mes-select" onchange="renderRendimientoMensual()">
         </div>
-
         <div class="balance-card">
           <div style="font-size:0.8rem; color:#94a3b8;">Resumen Financiero del Mes:</div>
           <div style="font-size:1.4rem; font-weight:bold; color:#38bdf8; margin:5px 0;" id="resumen-mes-utilidad">$0</div>
@@ -254,39 +229,39 @@
             <span>🔴 Gastos Totales: <strong id="resumen-mes-gastos">$0</strong></span>
           </div>
         </div>
-
         <div class="inner-card">
-          <h4>📊 Ventas Promedio por Día de la Semana</h4>
-          <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Descubre qué día genera más dinero en tu local (Miércoles a Domingo):</p>
-          <div id="desempeno-grafica-dias"></div>
+          <h4>📊 Ventas Promedio por Día</h4>
+          <div id="desempeno-grafica-dias" style="margin-top:10px;"></div>
         </div>
       </div>
 
-      <!-- Sub-módulo Bebidas Admin -->
+      <!-- Sub-módulo: BEBIDAS ADMIN (con Stock Sugerido) -->
       <div id="admin-view-bebidas" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
-        <h3>🥤 Configuración de Bebidas</h3>
+        <h3>🥤 Bebidas y Stock Sugerido</h3>
         <div id="admin-lista-bebidas" style="margin: 10px 0;"></div>
         <form onsubmit="agregarNuevaBebida(event)" class="inner-card">
           <h4>➕ Agregar Nueva Bebida</h4>
-          <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Club Colombia)" required>
+          <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Cerveza Aguila)" required>
           <input type="number" id="nueva-bebida-precio" placeholder="Precio Venta ($ COP)" required style="margin-top:5px;">
           <input type="number" id="nueva-bebida-stock" placeholder="Stock Actual" required style="margin-top:5px;">
+          <input type="number" id="nueva-bebida-sugerido" placeholder="Stock Sugerido / Ideal" required style="margin-top:5px;">
           <button type="submit" class="btn-primary">Guardar Bebida</button>
         </form>
       </div>
 
-      <!-- Sub-módulo Cocina Admin -->
-      <div id="admin-view-cocina" class="hidden">
+      <!-- Sub-módulo: INSUMOS ADMIN (Servilletas, Vasos, Cuchillos, Tenedores) -->
+      <div id="admin-view-insumos" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
-        <h3>🥬 Stock Sugerido de Cocina</h3>
-        <div id="admin-lista-cocina" style="margin: 10px 0;"></div>
-        <form onsubmit="agregarNuevoInsumo(event)" class="inner-card">
-          <h4>➕ Agregar Insumo Ideal</h4>
-          <input type="text" id="nuevo-insumo-nombre" placeholder="Nombre (Ej: Jamón)" required>
-          <input type="text" id="nuevo-insumo-unidad" placeholder="Unidad (gr, und, paquete)" required style="margin-top:5px;">
-          <input type="number" id="nuevo-insumo-ideal" placeholder="Cantidad Sugerida Ideal" required style="margin-top:5px;">
-          <button type="submit" class="btn-primary">Guardar Insumo Ideal</button>
+        <h3>🍽️ Insumos y Desechables</h3>
+        <div id="admin-lista-insumos" style="margin: 10px 0;"></div>
+        <form onsubmit="agregarNuevoInsumoDesechable(event)" class="inner-card">
+          <h4>➕ Agregar Nuevo Insumo</h4>
+          <input type="text" id="nuevo-insumo-desechable-nombre" placeholder="Nombre (Ej: Servilletas, Tenedores)" required>
+          <input type="text" id="nuevo-insumo-desechable-unidad" placeholder="Unidad (Paquete, Und, Caja)" required style="margin-top:5px;">
+          <input type="number" id="nuevo-insumo-desechable-stock" placeholder="Stock Actual" required style="margin-top:5px;">
+          <input type="number" id="nuevo-insumo-desechable-sugerido" placeholder="Stock Sugerido / Ideal" required style="margin-top:5px;">
+          <button type="submit" class="btn-primary">Guardar Insumo</button>
         </form>
       </div>
 
@@ -296,8 +271,8 @@
         <h3>📋 Tareas Diarias de Cocina</h3>
         <div id="admin-lista-checklist" style="margin: 10px 0;"></div>
         <form onsubmit="agregarNuevaTarea(event)" class="inner-card">
-          <h4>➕ Agregar Tarea de Preparación</h4>
-          <input type="text" id="nueva-tarea-nombre" placeholder="Ej: Hacer salsa de pizza" required>
+          <h4>➕ Agregar Tarea</h4>
+          <input type="text" id="nueva-tarea-nombre" placeholder="Ej: Salsa de pizza" required>
           <button type="submit" class="btn-primary">Guardar Tarea</button>
         </form>
       </div>
@@ -305,11 +280,11 @@
       <!-- Sub-módulo Usuarios Admin -->
       <div id="admin-view-usuarios" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
-        <h3>👥 Gestión de Personal</h3>
+        <h3>👥 Personal y Permisos</h3>
         <div id="admin-lista-usuarios" style="margin: 10px 0;"></div>
         <form onsubmit="agregarNuevoUsuario(event)" class="inner-card">
-          <h4>➕ Crear Nuevo Usuario</h4>
-          <input type="text" id="nuevo-user-nombre" placeholder="Nombre de usuario" required>
+          <h4>➕ Crear Usuario</h4>
+          <input type="text" id="nuevo-user-nombre" placeholder="Usuario" required>
           <input type="password" id="nuevo-user-pin" placeholder="PIN" required style="margin-top:5px;">
           <select id="nuevo-user-rol" style="margin-top:5px;">
             <option value="encargada">Encargada</option>
@@ -321,35 +296,62 @@
       </div>
     </section>
 
-    <!-- MÓDULO ENCARGADA MEJORADO -->
+    <!-- MÓDULO ENCARGADA (APERTURA PASO A PASO -> OPERACIÓN -> CIERRE) -->
     <section id="sec-encargada" class="hidden">
       <h3>📋 Módulo Encargada</h3>
 
-      <!-- Paso 1: Apertura -->
-      <div id="encargada-step-apertura" class="inner-card" style="margin-top: 10px;">
-        <h4>📦 Apertura de Turno: Inventario Inicial</h4>
-        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Confirma las bebidas recibidas según el cierre anterior:</p>
+      <!-- APERTURA PASO 1: Bebidas -->
+      <div id="encargada-apertura-paso1" class="inner-card" style="margin-top:10px;">
+        <span class="step-badge">PASO 1 DE 3: APERTURA</span>
+        <h4>🥤 Inventario Inicial de Bebidas</h4>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Verifica la cantidad física de bebidas al recibir el turno:</p>
         <div id="lista-apertura-bebidas"></div>
-        <button onclick="validarYGuardarApertura()" class="btn-primary">Verificar y Pasar a Turno</button>
+        <button onclick="irAAperturaInsumosPaso2()" class="btn-primary">Siguiente: Insumos →</button>
       </div>
 
-      <!-- Paso 2: Operaciones con BOTONES LIMPIOS -->
-      <div id="encargada-step-operacion" class="hidden">
+      <!-- APERTURA PASO 2: Insumos / Desechables -->
+      <div id="encargada-apertura-paso2" class="inner-card hidden" style="margin-top:10px;">
+        <span class="step-badge">PASO 2 DE 3: APERTURA</span>
+        <h4>🍽️ Inventario Inicial de Insumos</h4>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Verifica servilletas, tenedores, vasos, cuchillos, etc.:</p>
+        <div id="lista-apertura-insumos"></div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="volverAAperturaBebidasPaso1()" class="btn-secondary" style="flex:1;">← Atrás</button>
+          <button onclick="irAAperturaSaldosPaso3()" class="btn-primary" style="flex:2; margin-top:0;">Siguiente: Saldos Cuentas →</button>
+        </div>
+      </div>
+
+      <!-- APERTURA PASO 3: Saldos Cuentas Iniciales -->
+      <div id="encargada-apertura-paso3" class="inner-card hidden" style="margin-top:10px;">
+        <span class="step-badge">PASO 3 DE 3: APERTURA</span>
+        <h4>💵 Verificación de Saldos Iniciales</h4>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa el saldo base en cada cuenta al arrancar el turno:</p>
+        <div class="form-group"><label>Base en Efectivo ($):</label><input type="number" id="apertura-base-efectivo" value="0"></div>
+        <div class="form-group"><label>Saldo inicial Nequi ($):</label><input type="number" id="apertura-base-nequi" value="0"></div>
+        <div class="form-group"><label>Saldo inicial Bancolombia ($):</label><input type="number" id="apertura-base-bancolombia" value="0"></div>
+        <div class="form-group"><label>Saldo inicial Datáfono ($):</label><input type="number" id="apertura-base-datafono" value="0"></div>
         
-        <!-- Pestañas de selección visual -->
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button onclick="volverAAperturaInsumosPaso2()" class="btn-secondary" style="flex:1;">← Atrás</button>
+          <button onclick="finalizarAperturaYNotificarAdmin()" class="btn-primary" style="flex:2; margin-top:0; background-color:#22c55e;">Abrir Turno y Enviar Alerta 🔔</button>
+        </div>
+      </div>
+
+      <!-- OPERACIÓN DIARIA (DASHBOARD) -->
+      <div id="encargada-step-operacion" class="hidden">
         <div class="tab-btn-container">
           <button id="tab-gasto" class="tab-btn active" onclick="cambiarSubTabEncargada('gasto')">💸 Registrar Gasto</button>
-          <button id="tab-entrada" class="tab-btn" onclick="cambiarSubTabEncargada('entrada')">🥤 Entradas Bebidas</button>
+          <button id="tab-entrada" class="tab-btn" onclick="cambiarSubTabEncargada('entrada')">🥤 Entrada de Bebidas</button>
         </div>
 
         <!-- Vista Registrar Gasto -->
         <div id="subtab-view-gasto" class="inner-card">
           <h4>💸 Registrar Gasto del Turno</h4>
           <form onsubmit="registrarGasto(event)">
-            <div class="form-group"><label>Concepto del Gasto:</label><input type="text" id="gasto-concepto" placeholder="Ej: Hielo / Limones / Servilletas" required></div>
+            <div class="form-group"><label>Concepto:</label><input type="text" id="gasto-concepto" placeholder="Ej: Hielo / Hortalizas" required></div>
             <div class="form-group"><label>Valor ($ COP):</label><input type="number" id="gasto-valor" placeholder="0" required></div>
             <div class="form-group">
-              <label>Cuenta de donde se pagó:</label>
+              <label>Pagado de la cuenta:</label>
               <select id="gasto-cuenta">
                 <option value="Efectivo">Efectivo de Caja</option>
                 <option value="Nequi">Nequi</option>
@@ -360,55 +362,60 @@
           </form>
         </div>
 
-        <!-- Vista Entrada de Bebidas -->
+        <!-- Vista Entrada de Bebidas Con Cantidades a los lados -->
         <div id="subtab-view-entrada" class="inner-card hidden">
-          <h4>🥤 Reabastecimiento de Bebidas</h4>
-          <form onsubmit="registrarEntradaBebida(event)">
-            <div class="form-group">
-              <label>Seleccionar Bebida:</label>
-              <select id="entrada-bebida-id"></select>
-            </div>
-            <div class="form-group"><label>Cantidad Comprada/Ingresada:</label><input type="number" id="entrada-bebida-cant" placeholder="0" required></div>
-            <button type="submit" class="btn-primary" style="background-color:#0284c7;">Agregar a Stock</button>
-          </form>
+          <h4>🥤 Entrada Masiva / Carga de Bebidas</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa las cantidades recibidas para sumar al inventario:</p>
+          <div id="contenedor-entradas-masivas-bebidas"></div>
+          <button onclick="guardarEntradasMasivasBebidas()" class="btn-primary" style="background-color:#0284c7;">Sumar Bebidas al Stock</button>
         </div>
 
-        <button onclick="irACierreInventarioPaso1()" class="btn-primary" style="background-color:#ea580c; margin-top:15px;">Ir a Cierre de Turno →</button>
+        <button onclick="irACierrePaso1Bebidas()" class="btn-primary" style="background-color:#ea580c; margin-top:15px;">Ir a Cierre de Turno →</button>
       </div>
 
-      <!-- Paso 3: Cierre PASO A PASO (1. Inventario -> 2. Dinero) -->
-      <!-- Cierre Paso 1: Inventario Bebidas -->
+      <!-- CIERRE PASO 1: Bebidas Final -->
       <div id="encargada-cierre-paso1" class="hidden">
         <button class="btn-secondary" onclick="volverAOperacion()" style="margin-bottom:10px;">← Volver a Operaciones</button>
-        
         <div class="inner-card">
-          <div style="background:#ea580c; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-size:0.75rem; font-weight:bold; margin-bottom:8px;">PASO 1 DE 2</div>
-          <h4>📦 Inventario Final de Bebidas</h4>
-          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa la cantidad física exacta que queda en local al cerrar:</p>
+          <span class="step-badge">PASO 1 DE 3: CIERRE</span>
+          <h4>🥤 Inventario Final de Bebidas</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa las unidades físicas exactas que quedan:</p>
           <div id="lista-cierre-bebidas"></div>
-          <button onclick="irACierreDineroPaso2()" class="btn-primary">Continuar a Conteo de Dinero →</button>
+          <button onclick="irACierrePaso2Insumos()" class="btn-primary">Siguiente: Insumos Final →</button>
         </div>
       </div>
 
-      <!-- Cierre Paso 2: Conteo de Dinero -->
+      <!-- CIERRE PASO 2: Insumos Final -->
       <div id="encargada-cierre-paso2" class="hidden">
-        <button class="btn-secondary" onclick="volverACierreInventarioPaso1()" style="margin-bottom:10px;">← Volver a Inventario</button>
-        
+        <button class="btn-secondary" onclick="volverACierrePaso1Bebidas()" style="margin-bottom:10px;">← Volver a Bebidas</button>
         <div class="inner-card">
-          <div style="background:#ea580c; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-size:0.75rem; font-weight:bold; margin-bottom:8px;">PASO 2 DE 2</div>
-          <h4>💵 Conteo y Reporte de Dinero</h4>
-          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa el dinero recaudado en cada cuenta:</p>
-          <div class="form-group"><label>Efectivo Físico en Caja ($):</label><input type="number" id="cierre-efectivo" value="0"></div>
-          <div class="form-group"><label>Recaudado en Nequi ($):</label><input type="number" id="cierre-nequi" value="0"></div>
-          <div class="form-group"><label>Recaudado en Bancolombia ($):</label><input type="number" id="cierre-bancolombia" value="0"></div>
+          <span class="step-badge">PASO 2 DE 3: CIERRE</span>
+          <h4>🍽️ Inventario Final de Insumos</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa el conteo final de servilletas, tenedores, etc.:</p>
+          <div id="lista-cierre-insumos"></div>
+          <button onclick="irACierrePaso3Saldos()" class="btn-primary">Siguiente: Conteo de Dinero →</button>
+        </div>
+      </div>
+
+      <!-- CIERRE PASO 3: Conteo Final Dinero y Cuentas -->
+      <div id="encargada-cierre-paso3" class="hidden">
+        <button class="btn-secondary" onclick="volverACierrePaso2Insumos()" style="margin-bottom:10px;">← Volver a Insumos</button>
+        <div class="inner-card">
+          <span class="step-badge">PASO 3 DE 3: CIERRE</span>
+          <h4>💵 Saldos Finales en Cuentas y Caja</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa el saldo total real en cada cuenta al cerrar:</p>
+          <div class="form-group"><label>Efectivo Físico Total en Caja ($):</label><input type="number" id="cierre-final-efectivo" value="0"></div>
+          <div class="form-group"><label>Saldo Final Nequi ($):</label><input type="number" id="cierre-final-nequi" value="0"></div>
+          <div class="form-group"><label>Saldo Final Bancolombia ($):</label><input type="number" id="cierre-final-bancolombia" value="0"></div>
+          <div class="form-group"><label>Recaudado por Datáfono ($):</label><input type="number" id="cierre-final-datafono" value="0"></div>
         </div>
 
         <div class="inner-card">
-          <label><strong>📝 Observaciones / Novedades del Turno:</strong></label>
-          <textarea id="encargada-observaciones" rows="3" placeholder="Ej: Faltó dar un vuelto de $1.000..."></textarea>
+          <label><strong>📝 Observaciones / Novedades:</strong></label>
+          <textarea id="encargada-observaciones" rows="3" placeholder="Ej: Se cayó un vaso de vidrio..."></textarea>
         </div>
 
-        <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Finalizar y Enviar Cierre por WhatsApp</button>
+        <button onclick="generarReporteCierreCompleto()" class="btn-primary" style="background-color:#22c55e;">Finalizar Turno y Enviar Cierre por WhatsApp</button>
       </div>
 
     </section>
@@ -416,42 +423,29 @@
     <!-- MÓDULO COCINA -->
     <section id="sec-cocina" class="hidden">
       <h3>👨‍🍳 Módulo Cocina</h3>
-      
       <div class="inner-card">
         <h4>📋 Tareas / Preparaciones Diarias</h4>
         <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Selecciona ÚNICAMENTE lo que dejaste listo hoy:</p>
         <div id="lista-checklist-cocina"></div>
       </div>
-
       <div class="inner-card">
-        <h4>🥬 Conteo Físico de Insumos</h4>
-        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa lo disponible hoy físicamente:</p>
+        <h4>🥬 Conteo Físico de Insumos Cocina</h4>
         <div id="lista-cocina"></div>
       </div>
-      
       <div class="inner-card">
-        <label><strong>📝 Observaciones / Novedades:</strong></label>
-        <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Se rompió 1 jarra de vidrio..."></textarea>
+        <label><strong>📝 Observaciones:</strong></label>
+        <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Falta aceite para mañana..."></textarea>
       </div>
-
-      <button class="btn-primary" onclick="generarReporteCocina()">Enviar Inventario y Pedido por WhatsApp</button>
+      <button class="btn-primary" onclick="generarReporteCocina()">Enviar Inventario por WhatsApp</button>
     </section>
 
   </div>
 
   <nav id="app-nav" class="nav-bottom hidden">
-    <div class="nav-item active" onclick="navegarBarra('hub')">
-      <span>🏠</span> Hub
-    </div>
-    <div class="nav-item" onclick="navegarBarra('almacen')">
-      <span>📦</span> Almacén
-    </div>
-    <div class="nav-item" onclick="navegarBarra('desempeno')">
-      <span>📈</span> Métricas
-    </div>
-    <div class="nav-item" onclick="navegarBarra('finanzas')">
-      <span>💵</span> Finanzas
-    </div>
+    <div class="nav-item active" onclick="navegarBarra('hub')"><span>🏠</span> Hub</div>
+    <div class="nav-item" onclick="navegarBarra('almacen')"><span>📦</span> Almacén</div>
+    <div class="nav-item" onclick="navegarBarra('desempeno')"><span>📈</span> Métricas</div>
+    <div class="nav-item" onclick="navegarBarra('finanzas')"><span>💵</span> Finanzas</div>
   </nav>
 
   <script src="app.js"></script>
