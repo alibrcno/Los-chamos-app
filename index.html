@@ -3,109 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Los Chamos - Control Operativo</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Chart.js para las gráficas administrativas -->
+  <title>Los Chamos - Gestión</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div id="app">
-    <!-- PANTALLA DE SELECCIÓN DE USUARIO -->
-    <section id="sec-login" class="card">
-      <h2>🍟 Los Chamos</h2>
-      <p class="subtitle">Selecciona tu rol para ingresar:</p>
-      <div class="role-buttons">
-        <button onclick="seleccionarRol('encargada')" class="btn btn-primary">👩‍💼 Encargada (Atención/Bebidas)</button>
-        <button onclick="seleccionarRol('cocina')" class="btn btn-secondary">👨‍🍳 Cocina (Inventario Insumos)</button>
-        <button onclick="seleccionarRol('admin')" class="btn btn-dark">🔐 Administradora</button>
+  <div class="container">
+    <header>
+      <h1>Los Chamos</h1>
+      <p id="subtitulo-header">Sistema de Control Operativo</p>
+      <button id="btn-logout" class="hidden btn-secondary" onclick="cerrarSesion()" style="margin-top: 5px;">🔒 Cerrar Sesión</button>
+    </header>
+
+    <!-- PANTALLA LOGIN -->
+    <section id="sec-login">
+      <h3>Iniciar Sesión</h3>
+      <form id="form-login" onsubmit="iniciarSesion(event)" style="margin-top: 15px;">
+        <label>Usuario:</label>
+        <input type="text" id="login-usuario" placeholder="Ej: admin" required>
+        
+        <label>Contraseña / PIN:</label>
+        <input type="password" id="login-pin" placeholder="****" required>
+        
+        <button type="submit" class="btn-primary" style="margin-top: 15px;">Ingresar</button>
+      </form>
+      <div id="login-error" class="alert hidden" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; margin-top: 10px;">
+        ⚠️ Usuario o contraseña incorrectos.
       </div>
     </section>
 
-    <!-- MÓDULO ENCARGADA -->
-    <section id="sec-encargada" class="card hidden">
-      <button onclick="volverInicio()" class="btn-back">← Volver</button>
-      <h2>Turno Encargada - Bebidas y Caja</h2>
-      
+    <!-- ENCARGADA -->
+    <section id="sec-encargada" class="hidden">
       <div class="tabs">
-        <button onclick="cambiarTabEncargada('apertura')" class="tab-btn active">Apertura</button>
-        <button onclick="cambiarTabEncargada('gastos')" class="tab-btn">Compras / Gastos</button>
-        <button onclick="cambiarTabEncargada('cierre')" class="tab-btn">Cierre</button>
+        <button id="tab-btn-apertura" class="tab-btn active" onclick="cambiarTabEncargada('apertura')">Apertura</button>
+        <button id="tab-btn-gastos" class="tab-btn" onclick="cambiarTabEncargada('gastos')">Compras / Gastos</button>
+        <button id="tab-btn-cierre" class="tab-btn" onclick="cambiarTabEncargada('cierre')">Cierre</button>
       </div>
 
-      <!-- Tab Apertura -->
+      <!-- TAB APERTURA -->
       <div id="tab-apertura" class="tab-content">
         <h3>Inventario Inicial de Bebidas</h3>
         <div id="lista-bebidas-inicio"></div>
-        <button onclick="guardarApertura()" class="btn btn-success">Confirmar Apertura de Turno</button>
+        <button class="btn-primary" onclick="guardarApertura()">Confirmar Apertura de Turno</button>
         <div id="alerta-discrepancia" class="alert hidden"></div>
       </div>
 
-      <!-- Tab Gastos y Compras -->
+      <!-- TAB GASTOS -->
       <div id="tab-gastos" class="tab-content hidden">
-        <h3>Registrar Gasto o Compras</h3>
+        <h3>Registrar Compra / Gasto</h3>
         <form id="form-gasto" onsubmit="registrarGasto(event)">
-          <input type="text" id="gasto-concepto" placeholder="Concepto (ej. Hielo, Factura Coca-Cola)" required>
-          <input type="number" id="gasto-valor" placeholder="Valor en COP ($)" required>
-          <label>
-            <input type="checkbox" id="gasto-es-bebida" onchange="toggleBebidasCompra()"> ¿Incluye compra de bebidas para stock?
+          <label>Concepto:</label>
+          <input type="text" id="gasto-concepto" placeholder="Ej: Hielo, Limones, Hortalizas" required>
+          
+          <label>Valor ($ COP):</label>
+          <input type="number" id="gasto-valor" placeholder="0" required>
+
+          <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;">
+            <input type="checkbox" id="gasto-es-bebida" onchange="toggleBebidasCompra()"> Es reposición de Bebidas
           </label>
-          <div id="compra-bebida-fields" class="hidden">
+
+          <div id="compra-bebida-fields" class="hidden" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <label>Seleccionar Bebida:</label>
             <select id="select-bebida-compra"></select>
-            <input type="number" id="cant-bebida-compra" placeholder="Cantidad comprada">
+            <label>Cantidad comprada:</label>
+            <input type="number" id="cant-bebida-compra" value="1">
           </div>
-          <button type="submit" class="btn btn-primary">Guardar Gasto</button>
+
+          <button type="submit" class="btn-primary">Registrar Gasto</button>
         </form>
       </div>
 
-      <!-- Tab Cierre -->
+      <!-- TAB CIERRE -->
       <div id="tab-cierre" class="tab-content hidden">
         <h3>Inventario Final de Bebidas</h3>
         <div id="lista-bebidas-cierre"></div>
+        
         <h3>Recaudo en Caja</h3>
-        <input type="number" id="cierre-efectivo" placeholder="Efectivo Recaudado ($)">
-        <input type="number" id="cierre-nequi" placeholder="Total Nequi ($)">
-        <input type="number" id="cierre-bancolombia" placeholder="Total Bancolombia ($)">
-        <button onclick="generarReporteCierre()" class="btn btn-warning">Finalizar Turno y Generar Reporte</button>
+        <label>Efectivo ($):</label>
+        <input type="number" id="cierre-efectivo" placeholder="0">
+        <label>Nequi ($):</label>
+        <input type="number" id="cierre-nequi" placeholder="0">
+        <label>Bancolombia ($):</label>
+        <input type="number" id="cierre-bancolombia" placeholder="0">
+
+        <button class="btn-primary" style="background: #f59e0b;" onclick="generarReporteCierre()">Finalizar Turno y Generar Reporte</button>
         <div id="resumen-cierre" class="summary-box hidden"></div>
       </div>
     </section>
 
-    <!-- MÓDULO COCINA -->
-    <section id="sec-cocina" class="card hidden">
-      <button onclick="volverInicio()" class="btn-back">← Volver</button>
-      <h2>🍳 Inventario de Cocina (Cierre Nocturno)</h2>
+    <!-- COCINA -->
+    <section id="sec-cocina" class="hidden">
+      <h3>Inventario de Cocina e Insumos</h3>
       <div id="lista-cocina"></div>
-      <button onclick="generarListaCompras()" class="btn btn-primary">Verificar Mínimos y Generar Lista de Compras</button>
+      <button class="btn-primary" onclick="generarListaCompras()">Generar Lista de Compras</button>
       <div id="reporte-compras" class="summary-box hidden"></div>
     </section>
 
-    <!-- MÓDULO ADMINISTRADORA -->
-    <section id="sec-admin" class="card hidden">
-      <button onclick="volverInicio()" class="btn-back">← Volver</button>
-      <h2>📊 Panel de Administradora</h2>
-      
-      <div class="kpi-container">
-        <div class="kpi">
-          <small>Efectivo en Caja</small>
-          <h3 id="saldo-efectivo">$0</h3>
+    <!-- ADMINISTRADORA -->
+    <section id="sec-admin" class="hidden">
+      <h3>Panel de Control Financiero</h3>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span>Efectivo Caja</span>
+          <strong id="saldo-efectivo">$0</strong>
         </div>
-        <div class="kpi">
-          <small>Nequi</small>
-          <h3 id="saldo-nequi">$0</h3>
+        <div class="metric-card">
+          <span>Nequi</span>
+          <strong id="saldo-nequi">$0</strong>
         </div>
-        <div class="kpi">
-          <small>Bancolombia</small>
-          <h3 id="saldo-bancolombia">$0</h3>
+        <div class="metric-card">
+          <span>Bancolombia</span>
+          <strong id="saldo-bancolombia">$0</strong>
         </div>
       </div>
 
-      <h3>Rendimiento Semanal (Ingresos vs Gastos)</h3>
-      <div class="chart-container">
+      <div style="margin-top: 20px;">
         <canvas id="chartFinanzas"></canvas>
       </div>
 
-      <h3>Historial de Transacciones</h3>
-      <ul id="lista-historial" class="history-list"></ul>
+      <!-- SUBSECCIÓN: GESTIÓN DE INVENTARIOS -->
+      <hr style="border-color: #334155; margin: 25px 0;">
+      <h3>📦 Gestión de Inventario y Precios</h3>
+      
+      <h4>Bebidas y Precios de Venta</h4>
+      <div id="admin-gestion-bebidas"></div>
+      
+      <form id="form-add-bebida" onsubmit="agregarNuevaBebida(event)" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-top: 10px;">
+        <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">➕ Agregar Nueva Bebida:</p>
+        <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Cerveza Club)" required>
+        <input type="number" id="nueva-bebida-precio" placeholder="Precio ($ COP)" required>
+        <input type="number" id="nueva-bebida-stock" placeholder="Stock Inicial" required>
+        <button type="submit" class="btn-secondary" style="margin-top: 5px;">Guardar Bebida</button>
+      </form>
+
+      <!-- SUBSECCIÓN: GESTIÓN DE USUARIOS Y PERMISOS -->
+      <hr style="border-color: #334155; margin: 25px 0;">
+      <h3>👥 Usuarios y Permisos</h3>
+      <div id="admin-lista-usuarios"></div>
+
+      <form id="form-add-usuario" onsubmit="agregarNuevoUsuario(event)" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-top: 10px;">
+        <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">➕ Crear Nuevo Usuario:</p>
+        <input type="text" id="nuevo-user-nombre" placeholder="Usuario (Ej: maria)" required>
+        <input type="password" id="nuevo-user-pin" placeholder="PIN / Contraseña" required>
+        <select id="nuevo-user-rol" style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; color: white; border: 1px solid #334155; margin-bottom: 10px;">
+          <option value="encargada">Encargada (Bebidas / Caja)</option>
+          <option value="cocina">Cocina (Insumos)</option>
+          <option value="admin">Administradora (Acceso Total)</option>
+        </select>
+        <button type="submit" class="btn-secondary">Crear Usuario</button>
+      </form>
     </section>
   </div>
 
