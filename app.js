@@ -1,56 +1,57 @@
-// BASE DE DATOS LOCAL
-let usuarios = [
-  { user: "admin", pin: "1234", rol: "admin", nombre: "Administradora" },
-  { user: "encargada", pin: "1111", rol: "encargada", nombre: "Encargada" },
-  { user: "cocina", pin: "2222", rol: "cocina", nombre: "Cocinero" }
-];
+// --- BASE DE DATOS Y ESTADO LOCAL ---
+let db = {
+  usuarios: JSON.parse(localStorage.getItem('chamos_usuarios')) || [
+    { usuario: 'admin', pin: '1234', rol: 'admin' },
+    { usuario: 'encargada', pin: '1111', rol: 'encargada' },
+    { usuario: 'cocina', pin: '2222', rol: 'cocina' }
+  ],
+  bebidas: JSON.parse(localStorage.getItem('chamos_bebidas')) || [
+    { id: 1, nombre: 'Cerveza Aguila', precio: 4000, stock: 24 },
+    { id: 2, nombre: 'Gatorade', precio: 5000, stock: 12 }
+  ],
+  insumosCocina: JSON.parse(localStorage.getItem('chamos_insumos')) || [
+    { id: 1, nombre: 'Jamón', cantidad: 500, unidad: 'gr', ideal: 1000 },
+    { id: 2, nombre: 'Lechuga', cantidad: 2, unidad: 'und', ideal: 5 }
+  ],
+  movimientos: JSON.parse(localStorage.getItem('chamos_movimientos')) || [
+    { fecha: 'Lunes', ingresos: { Efectivo: 50000, Nequi: 0, Bancolombia: 0 }, gastos: [{ concepto: 'Hielo', valor: 10000, cuenta: 'Efectivo' }] }
+  ],
+  gastosTurnoActual: [],
+  usuarioActual: null
+};
 
-let bebidas = [
-  { id: 1, nombre: "Coca-Cola 400ml", stock: 12, precio: 4000 },
-  { id: 2, nombre: "Malta Pony", stock: 8, precio: 3500 },
-  { id: 3, nombre: "Agua Mineral", stock: 15, precio: 2500 }
-];
+// WhatsApp configurado al número directo
+const NUMERO_WHATSAPP = "573218382315";
 
-let cocina = [
-  { id: 1, nombre: "Harina de Trigo (Kg)", stock: 5, minimo: 10 },
-  { id: 2, nombre: "Queso Costeño (Kg)", stock: 3, minimo: 5 },
-  { id: 3, nombre: "Carne para Hamburguesa (Unidades)", stock: 20, minimo: 30 }
-];
+function guardarBD() {
+  localStorage.setItem('chamos_usuarios', JSON.stringify(db.usuarios));
+  localStorage.setItem('chamos_bebidas', JSON.stringify(db.bebidas));
+  localStorage.setItem('chamos_insumos', JSON.stringify(db.insumosCocina));
+  localStorage.setItem('chamos_movimientos', JSON.stringify(db.movimientos));
+}
 
-let saldos = { efectivo: 100000, nequi: 50000, bancolombia: 80000 };
-let ultimoCierreBebidas = { 1: 12, 2: 8, 3: 15 };
-let turnoAbierto = false;
-let usuarioActual = null;
-
-// AUTENTICACIÓN Y LOGIN
+// --- AUTENTICACIÓN ---
 function iniciarSesion(e) {
   e.preventDefault();
-  const u = document.getElementById('login-usuario').value.trim();
-  const p = document.getElementById('login-pin').value.trim();
+  const user = document.getElementById('login-usuario').value.trim();
+  const pin = document.getElementById('login-pin').value.trim();
 
-  const encontrado = usuarios.find(usr => usr.user.toLowerCase() === u.toLowerCase() && usr.pin === p);
+  const usuario = db.usuarios.find(u => u.usuario.toLowerCase() === user.toLowerCase() && u.pin === pin);
 
-  if (encontrado) {
-    usuarioActual = encontrado;
-    document.getElementById('login-error').classList.add('hidden');
-    document.getElementById('form-login').reset();
+  if (usuario) {
+    db.usuarioActual = usuario;
     document.getElementById('sec-login').classList.add('hidden');
     document.getElementById('btn-logout').classList.remove('hidden');
 
-    if (encontrado.rol === 'encargada') {
-      document.getElementById('sec-encargada').classList.remove('hidden');
-      if (!turnoAbierto) {
-        cambiarTabEncargada('apertura');
-      } else {
-        cambiarTabEncargada('gastos');
-      }
-      renderBebidasApertura();
-    } else if (encontrado.rol === 'cocina') {
-      document.getElementById('sec-cocina').classList.remove('hidden');
-      renderCocina();
-    } else if (encontrado.rol === 'admin') {
+    if (usuario.rol === 'admin') {
       document.getElementById('sec-admin').classList.remove('hidden');
-      renderAdmin();
+      document.getElementById('app-nav').classList.remove('hidden');
+      cargarAdminHub();
+    } else if (usuario.rol === 'encargada') {
+      document.getElementById('sec-encargada').classList.remove('hidden');
+    } else if (usuario.rol === 'cocina') {
+      document.getElementById('sec-cocina').classList.remove('hidden');
+      cargarInsumosCocina();
     }
   } else {
     document.getElementById('login-error').classList.remove('hidden');
@@ -58,271 +59,269 @@ function iniciarSesion(e) {
 }
 
 function cerrarSesion() {
-  usuarioActual = null;
-  document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-  document.getElementById('btn-logout').classList.add('hidden');
+  db.usuarioActual = null;
   document.getElementById('sec-login').classList.remove('hidden');
+  document.getElementById('sec-admin').classList.add('hidden');
+  document.getElementById('sec-encargada').classList.add('hidden');
+  document.getElementById('sec-cocina').classList.add('hidden');
+  document.getElementById('app-nav').classList.add('hidden');
+  document.getElementById('btn-logout').classList.add('hidden');
 }
 
-// CONTROL PESTAÑAS ENCARGADA
-function cambiarTabEncargada(tabName) {
-  if (tabName === 'apertura' && turnoAbierto) {
-    alert("⚠️ La apertura de turno ya fue confirmada. Para modificar inventario contacta a la administradora.");
-    return;
-  }
+// --- PANEL ADMIN & SALDOS DE CUENTAS ---
+function cargarAdminHub() {
+  // Cálculo exacto de Saldos acumulados por cuenta
+  let saldos = { Bancolombia: 0, Nequi: 0, Efectivo: 0 };
 
-  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-  document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-  document.getElementById(`tab-btn-${tabName}`).classList.add('active');
-
-  if (tabName === 'gastos') renderSelectBebidasCompra();
-  if (tabName === 'cierre') renderBebidasCierre();
-}
-
-// LÓGICA ENCARGADA - APERTURA
-function renderBebidasApertura() {
-  const cont = document.getElementById('lista-bebidas-inicio');
-  cont.innerHTML = bebidas.map(b => `
-    <div style="margin-bottom: 10px;">
-      <label>${b.nombre} (Esperado: ${ultimoCierreBebidas[b.id] || 0})</label>
-      <input type="number" id="init-bebida-${b.id}" value="${ultimoCierreBebidas[b.id] || 0}">
-    </div>
-  `).join('');
-}
-
-function guardarApertura() {
-  let discrepancias = [];
-  bebidas.forEach(b => {
-    let cantIngresada = parseInt(document.getElementById(`init-bebida-${b.id}`).value) || 0;
-    let esperado = ultimoCierreBebidas[b.id] || 0;
-    b.stock = cantIngresada;
-    if (cantIngresada !== esperado) {
-      discrepancias.push(`${b.nombre}: inició con ${cantIngresada} (Se esperaban ${esperado})`);
+  db.movimientos.forEach(m => {
+    // Sumar Ingresos
+    if (m.ingresos) {
+      saldos.Bancolombia += m.ingresos.Bancolombia || 0;
+      saldos.Nequi += m.ingresos.Nequi || 0;
+      saldos.Efectivo += m.ingresos.Efectivo || 0;
+    }
+    // Restar Gastos según la cuenta usada
+    if (m.gastos) {
+      m.gastos.forEach(g => {
+        if (saldos[g.cuenta] !== undefined) {
+          saldos[g.cuenta] -= g.valor;
+        }
+      });
     }
   });
 
-  turnoAbierto = true;
-  document.getElementById('tab-btn-apertura').style.opacity = '0.5';
+  document.getElementById('saldo-bancolombia').innerText = `$${saldos.Bancolombia.toLocaleString()}`;
+  document.getElementById('saldo-nequi').innerText = `$${saldos.Nequi.toLocaleString()}`;
+  document.getElementById('saldo-efectivo').innerText = `$${saldos.Efectivo.toLocaleString()}`;
 
-  const alertDiv = document.getElementById('alerta-discrepancia');
-  if (discrepancias.length > 0) {
-    alertDiv.innerHTML = `<strong>⚠️ Alerta de Discrepancia Registrada:</strong><br>${discrepancias.join('<br>')}`;
+  // Vista Simple Diaria (Ej: Lunes - Ingresos: $X | Gastos: $Y)
+  const contDiario = document.getElementById('lista-movimientos-diarios');
+  if (db.movimientos.length === 0) {
+    contDiario.innerHTML = `<p style="font-size:0.8rem; color:#94a3b8;">Sin movimientos registrados esta semana.</p>`;
   } else {
-    alertDiv.innerHTML = "✅ Apertura confirmada sin novedades.";
+    contDiario.innerHTML = db.movimientos.map(m => {
+      const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0);
+      const totGastos = (m.gastos || []).reduce((acc, g) => acc + g.valor, 0);
+      return `
+        <div class="daily-row">
+          <div><strong>${m.fecha}</strong></div>
+          <div>
+            <span class="txt-green">Ingresos: $${totIngresos.toLocaleString()}</span> | 
+            <span class="txt-red">Gastos: $${totGastos.toLocaleString()}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
-  alertDiv.classList.remove('hidden');
-
-  setTimeout(() => {
-    cambiarTabEncargada('gastos');
-  }, 1200);
 }
 
-// LÓGICA ENCARGADA - GASTOS
-function toggleBebidasCompra() {
-  const check = document.getElementById('gasto-es-bebida').checked;
-  const fields = document.getElementById('compra-bebida-fields');
-  if (check) fields.classList.remove('hidden');
-  else fields.classList.add('hidden');
-}
+// Sub-navegación dentro de Admin
+function verSubModuloAdmin(modulo) {
+  document.getElementById('admin-view-hub').classList.add('hidden');
+  document.getElementById('admin-view-bebidas').classList.add('hidden');
+  document.getElementById('admin-view-cocina').classList.add('hidden');
+  document.getElementById('admin-view-usuarios').classList.add('hidden');
 
-function renderSelectBebidasCompra() {
-  const sel = document.getElementById('select-bebida-compra');
-  sel.innerHTML = bebidas.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
-}
-
-function registrarGasto(e) {
-  e.preventDefault();
-  const concepto = document.getElementById('gasto-concepto').value;
-  const valor = parseInt(document.getElementById('gasto-valor').value) || 0;
-  const esBebida = document.getElementById('gasto-es-bebida').checked;
-
-  if (esBebida) {
-    const bebidaId = parseInt(document.getElementById('select-bebida-compra').value);
-    const cant = parseInt(document.getElementById('cant-bebida-compra').value) || 0;
-    let b = bebidas.find(item => item.id === bebidaId);
-    if (b) b.stock += cant;
+  if (modulo === 'bebidas') {
+    document.getElementById('admin-view-bebidas').classList.remove('hidden');
+    renderListaBebidasAdmin();
+  } else if (modulo === 'cocina') {
+    document.getElementById('admin-view-cocina').classList.remove('hidden');
+    renderListaCocinaAdmin();
+  } else if (modulo === 'usuarios') {
+    document.getElementById('admin-view-usuarios').classList.remove('hidden');
+    renderListaUsuariosAdmin();
   }
-
-  saldos.efectivo -= valor;
-  alert(`Gasto de $${valor.toLocaleString('es-CO')} registrado.`);
-  document.getElementById('form-gasto').reset();
-  toggleBebidasCompra();
 }
 
-// LÓGICA ENCARGADA - CIERRE
-function renderBebidasCierre() {
-  const cont = document.getElementById('lista-bebidas-cierre');
-  cont.innerHTML = bebidas.map(b => `
-    <div style="margin-bottom: 10px;">
-      <label>${b.nombre} (Stock en sistema: ${b.stock})</label>
-      <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final física">
-    </div>
-  `).join('');
+function volverAdminHub() {
+  document.getElementById('admin-view-bebidas').classList.add('hidden');
+  document.getElementById('admin-view-cocina').classList.add('hidden');
+  document.getElementById('admin-view-usuarios').classList.add('hidden');
+  document.getElementById('admin-view-hub').classList.remove('hidden');
+  cargarAdminHub();
 }
 
-function generarReporteCierre() {
-  let totalBebidasVendidasCOP = 0;
-  let desgloseText = "";
-
-  bebidas.forEach(b => {
-    let finalCant = parseInt(document.getElementById(`cierre-bebida-${b.id}`).value) || 0;
-    let inicialCant = b.stock;
-    let vendidas = inicialCant - finalCant;
-    if (vendidas < 0) vendidas = 0;
-    let subtotal = vendidas * b.precio;
-    totalBebidasVendidasCOP += subtotal;
-    desgloseText += `• ${b.nombre}: ${vendidas} vendidas ($${subtotal.toLocaleString('es-CO')})\n`;
-    ultimoCierreBebidas[b.id] = finalCant;
-    b.stock = finalCant;
-  });
-
-  let ef = parseInt(document.getElementById('cierre-efectivo').value) || 0;
-  let nq = parseInt(document.getElementById('cierre-nequi').value) || 0;
-  let bc = parseInt(document.getElementById('cierre-bancolombia').value) || 0;
-
-  saldos.efectivo += ef;
-  saldos.nequi += nq;
-  saldos.bancolombia += bc;
-
-  turnoAbierto = false; // Se reabre la apertura para el próximo turno
-  document.getElementById('tab-btn-apertura').style.opacity = '1';
-
-  const resumen = document.getElementById('resumen-cierre');
-  resumen.innerHTML = `
-    <h4>Reporte de Cierre de Turno</h4>
-    <p><strong>Ventas Estimadas en Bebidas:</strong> $${totalBebidasVendidasCOP.toLocaleString('es-CO')}</p>
-    <pre style="white-space: pre-wrap;">${desgloseText}</pre>
-    <p><strong>Recaudo Total Ingresado:</strong> $${(ef+nq+bc).toLocaleString('es-CO')}</p>
-  `;
-  resumen.classList.remove('hidden');
-}
-
-// LÓGICA COCINA
-function renderCocina() {
-  const cont = document.getElementById('lista-cocina');
-  cont.innerHTML = cocina.map(c => `
-    <div style="margin-bottom: 10px;">
-      <label>${c.nombre} (Sugerido mín: ${c.minimo})</label>
-      <input type="number" id="cocina-item-${c.id}" value="${c.stock}">
-    </div>
-  `).join('');
-}
-
-function generarListaCompras() {
-  let listaCompras = [];
-  cocina.forEach(c => {
-    let cantActual = parseInt(document.getElementById(`cocina-item-${c.id}`).value) || 0;
-    if (cantActual < c.minimo) {
-      listaCompras.push(`• ${c.nombre}: comprar ${c.minimo - cantActual}`);
-    }
-  });
-
-  const rep = document.getElementById('reporte-compras');
-  if (listaCompras.length > 0) {
-    rep.innerHTML = `<h4>📋 Lista de Compras Recomendada:</h4>${listaCompras.join('<br>')}`;
-  } else {
-    rep.innerHTML = "✅ Todos los insumos están completos.";
+function navegarBarra(vista) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (vista === 'hub') {
+    volverAdminHub();
+  } else if (vista === 'bebidas') {
+    verSubModuloAdmin('bebidas');
+  } else if (vista === 'cocina') {
+    verSubModuloAdmin('cocina');
   }
-  rep.classList.remove('hidden');
 }
 
-// LÓGICA ADMINISTRADORA
-function renderAdmin() {
-  document.getElementById('saldo-efectivo').innerText = `$${saldos.efectivo.toLocaleString('es-CO')}`;
-  document.getElementById('saldo-nequi').innerText = `$${saldos.nequi.toLocaleString('es-CO')}`;
-  document.getElementById('saldo-bancolombia').innerText = `$${saldos.bancolombia.toLocaleString('es-CO')}`;
-
-  // Render Inventario de Bebidas para Admin
-  const contBebidas = document.getElementById('admin-gestion-bebidas');
-  contBebidas.innerHTML = bebidas.map(b => `
-    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; background: #1e293b; padding: 8px; border-radius: 6px;">
-      <span style="flex: 1;">${b.nombre}</span>
-      <input type="number" value="${b.precio}" style="width: 80px;" onchange="actualizarPrecioBebida(${b.id}, this.value)" title="Precio Venta">
-      <input type="number" value="${b.stock}" style="width: 60px;" onchange="actualizarStockBebida(${b.id}, this.value)" title="Stock Actual">
-      <button onclick="eliminarBebida(${b.id})" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">🗑️</button>
-    </div>
-  `).join('');
-
-  // Render Usuarios para Admin
-  const contUsers = document.getElementById('admin-lista-usuarios');
-  contUsers.innerHTML = usuarios.map((u, i) => `
-    <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 8px; border-radius: 6px; margin-bottom: 6px;">
+// RENDER Y GESTIÓN BEBIDAS / COCINA / USUARIOS
+function renderListaBebidasAdmin() {
+  const cont = document.getElementById('admin-lista-bebidas');
+  cont.innerHTML = db.bebidas.map(b => `
+    <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
       <div>
-        <strong>${u.user}</strong> <small style="color: #94a3b8;">(${u.rol})</small>
+        <strong>${b.nombre}</strong><br>
+        <small style="color:#64748b;">Precio: $${b.precio.toLocaleString()} | Stock: ${b.stock} unds</small>
       </div>
-      <div>
-        <small style="color: #38bdf8; margin-right: 10px;">PIN: ${u.pin}</small>
-        ${u.user !== 'admin' ? `<button onclick="eliminarUsuario(${i})" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 6px;">🗑️</button>` : ''}
-      </div>
+      <button class="btn-secondary" onclick="eliminarBebida(${b.id})">🗑️</button>
     </div>
   `).join('');
-
-  // Gráfico
-  const canvas = document.getElementById('chartFinanzas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-        datasets: [
-          { label: 'Ingresos ($)', data: [150000, 200000, 180000, 220000, 350000, 500000, 400000], backgroundColor: '#22c55e' },
-          { label: 'Gastos ($)', data: [50000, 40000, 60000, 30000, 100000, 120000, 90000], backgroundColor: '#ef4444' }
-        ]
-      }
-    });
-  }
-}
-
-// FUNCIONES GESTIÓN BEBIDAS ADMIN
-function actualizarPrecioBebida(id, nuevoPrecio) {
-  let b = bebidas.find(x => x.id === id);
-  if (b) b.precio = parseInt(nuevoPrecio) || 0;
-}
-
-function actualizarStockBebida(id, nuevoStock) {
-  let b = bebidas.find(x => x.id === id);
-  if (b) b.stock = parseInt(nuevoStock) || 0;
-}
-
-function eliminarBebida(id) {
-  bebidas = bebidas.filter(x => x.id !== id);
-  renderAdmin();
 }
 
 function agregarNuevaBebida(e) {
   e.preventDefault();
   const nombre = document.getElementById('nueva-bebida-nombre').value;
-  const precio = parseInt(document.getElementById('nueva-bebida-precio').value) || 0;
+  const precio = parseFloat(document.getElementById('nueva-bebida-precio').value) || 0;
   const stock = parseInt(document.getElementById('nueva-bebida-stock').value) || 0;
 
-  const nuevoId = bebidas.length > 0 ? Math.max(...bebidas.map(b => b.id)) + 1 : 1;
-  bebidas.push({ id: nuevoId, nombre, precio, stock });
-  document.getElementById('form-add-bebida').reset();
-  renderAdmin();
+  db.bebidas.push({ id: Date.now(), nombre, precio, stock });
+  guardarBD();
+  renderListaBebidasAdmin();
+  e.target.reset();
 }
 
-// FUNCIONES GESTIÓN USUARIOS ADMIN
+function eliminarBebida(id) {
+  db.bebidas = db.bebidas.filter(b => b.id !== id);
+  guardarBD();
+  renderListaBebidasAdmin();
+}
+
+function renderListaCocinaAdmin() {
+  const cont = document.getElementById('admin-lista-cocina');
+  cont.innerHTML = db.insumosCocina.map(i => `
+    <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>${i.nombre}</strong><br>
+        <small style="color:#64748b;">Stock Ideal: ${i.ideal} ${i.unidad}</small>
+      </div>
+      <button class="btn-secondary" onclick="eliminarInsumo(${i.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function agregarNuevoInsumo(e) {
+  e.preventDefault();
+  const nombre = document.getElementById('nuevo-insumo-nombre').value;
+  const unidad = document.getElementById('nuevo-insumo-unidad').value;
+  const ideal = parseFloat(document.getElementById('nuevo-insumo-ideal').value) || 0;
+
+  db.insumosCocina.push({ id: Date.now(), nombre, cantidad: 0, unidad, ideal });
+  guardarBD();
+  renderListaCocinaAdmin();
+  e.target.reset();
+}
+
+function eliminarInsumo(id) {
+  db.insumosCocina = db.insumosCocina.filter(i => i.id !== id);
+  guardarBD();
+  renderListaCocinaAdmin();
+}
+
+function renderListaUsuariosAdmin() {
+  const cont = document.getElementById('admin-lista-usuarios');
+  cont.innerHTML = db.usuarios.map((u, index) => `
+    <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>${u.usuario}</strong> (${u.rol})<br>
+        <small style="color:#64748b;">PIN: ${u.pin}</small>
+      </div>
+      ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
+    </div>
+  `).join('');
+}
+
 function agregarNuevoUsuario(e) {
   e.preventDefault();
-  const user = document.getElementById('nuevo-user-nombre').value.trim();
+  const usuario = document.getElementById('nuevo-user-nombre').value.trim();
   const pin = document.getElementById('nuevo-user-pin').value.trim();
   const rol = document.getElementById('nuevo-user-rol').value;
 
-  if (usuarios.some(u => u.user.toLowerCase() === user.toLowerCase())) {
-    alert("⚠️ Este nombre de usuario ya existe.");
-    return;
-  }
-
-  usuarios.push({ user, pin, rol, nombre: user });
-  document.getElementById('form-add-usuario').reset();
-  renderAdmin();
-  alert(`Usuario '${user}' creado con éxito para el rol '${rol}'.`);
+  db.usuarios.push({ usuario, pin, rol });
+  guardarBD();
+  renderListaUsuariosAdmin();
+  e.target.reset();
 }
 
 function eliminarUsuario(index) {
-  usuarios.splice(index, 1);
-  renderAdmin();
+  db.usuarios.splice(index, 1);
+  guardarBD();
+  renderListaUsuariosAdmin();
+}
+
+// --- MÓDULO ENCARGADA Y GASTOS CON DESCUENTO DE CUENTA ---
+function registrarGasto(e) {
+  e.preventDefault();
+  const concepto = document.getElementById('gasto-concepto').value;
+  const valor = parseFloat(document.getElementById('gasto-valor').value) || 0;
+  const cuenta = document.getElementById('gasto-cuenta').value;
+
+  db.gastosTurnoActual.push({ concepto, valor, cuenta });
+  alert(`✅ Gasto registrado y descontado de ${cuenta}`);
+  e.target.reset();
+}
+
+function generarReporteCierre() {
+  const efec = parseFloat(document.getElementById('cierre-efectivo').value) || 0;
+  const neq = parseFloat(document.getElementById('cierre-nequi').value) || 0;
+  const ban = parseFloat(document.getElementById('cierre-bancolombia').value) || 0;
+
+  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const hoyNombre = dias[new Date().getDay()];
+
+  db.movimientos.push({
+    fecha: `${hoyNombre} (${new Date().toLocaleDateString()})`,
+    ingresos: { Efectivo: efec, Nequi: neq, Bancolombia: ban },
+    gastos: [...db.gastosTurnoActual]
+  });
+
+  guardarBD();
+
+  let msg = `*📊 CIERRE Y RECAUDO - LOS CHAMOS*\n📅 ${hoyNombre} ${new Date().toLocaleDateString()}\n\n`;
+  msg += `*💰 INGRESOS:*\n- Efectivo: $${efec.toLocaleString()}\n- Nequi: $${neq.toLocaleString()}\n- Bancolombia: $${ban.toLocaleString()}\n\n`;
+  msg += `*💸 GASTOS:*\n`;
+  db.gastosTurnoActual.forEach(g => {
+    msg += `- ${g.concepto}: $${g.valor.toLocaleString()} (${g.cuenta})\n`;
+  });
+
+  db.gastosTurnoActual = [];
+
+  const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  cerrarSesion();
+}
+
+// --- MÓDULO COCINA Y COMPRAS SEGÚN STOCK SUGERIDO ---
+function cargarInsumosCocina() {
+  const cont = document.getElementById('lista-cocina');
+  cont.innerHTML = db.insumosCocina.map(i => `
+    <div class="inner-card">
+      <label><strong>${i.nombre}</strong> (Sugerido Ideal: ${i.ideal} ${i.unidad})</label>
+      <input type="number" id="cocina-cant-${i.id}" value="${i.cantidad}" placeholder="Hay en cocina">
+    </div>
+  `).join('');
+}
+
+function generarListaCompras() {
+  let msg = `*🛒 LISTA DE COMPRAS COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
+  let lista = [];
+
+  db.insumosCocina.forEach(i => {
+    const cantActual = parseFloat(document.getElementById(`cocina-cant-${i.id}`).value) || 0;
+    i.cantidad = cantActual;
+    if (cantActual < i.ideal) {
+      const faltante = i.ideal - cantActual;
+      lista.push(`• ${faltante} ${i.unidad} de ${i.nombre}`);
+    }
+  });
+
+  if (lista.length > 0) {
+    msg += `*FALTANTES Y PEDIDO:* \n` + lista.join('\n');
+  } else {
+    msg += `✅ Stock completo en cocina.`;
+  }
+
+  guardarBD();
+
+  const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  cerrarSesion();
 }
