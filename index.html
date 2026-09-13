@@ -4,396 +4,247 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Los Chamos - Control Operativo</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; min-height: 100vh; padding-bottom: 70px; }
+    
+    /* Header naranja estilo Los Chamos */
+    header { background-color: #ea580c; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    .btn-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
 
-    body {
-      background-color: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 15px;
-    }
+    .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+    .hidden { display: none !important; }
 
-    .container {
-      width: 100%;
-      max-width: 480px;
-      background-color: #1e293b;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-    }
+    /* Tarjetas estilo App (Grid de 2 columnas) */
+    .grid-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .app-card { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: flex-start; border: 1px solid #e2e8f0; cursor: pointer; transition: transform 0.1s; }
+    .app-card:active { transform: scale(0.98); }
+    .card-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 12px; color: white; }
+    .card-title { font-weight: 700; font-size: 0.95rem; color: #1e293b; margin-bottom: 4px; }
+    .card-desc { font-size: 0.75rem; color: #64748b; line-height: 1.2; }
 
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 15px;
-    }
+    /* Colores Iconos */
+    .icon-orange { background: #f97316; }
+    .icon-green { background: #22c55e; }
+    .icon-blue { background: #3b82f6; }
+    .icon-purple { background: #a855f7; }
+    .icon-red { background: #ef4444; }
 
-    header h1 {
-      font-size: 1.8rem;
-      color: #38bdf8;
-    }
+    /* Saldos Financieros */
+    .balance-card { background: #0f172a; color: white; border-radius: 14px; padding: 15px; margin-bottom: 15px; }
+    .balance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; text-align: center; }
+    .balance-item { background: #1e293b; padding: 10px; border-radius: 8px; }
+    .balance-item span { font-size: 0.7rem; color: #94a3b8; display: block; }
+    .balance-item strong { font-size: 0.9rem; color: #38bdf8; }
 
-    header p {
-      font-size: 0.85rem;
-      color: #94a3b8;
-    }
+    /* Form & Inputs */
+    .inner-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+    .form-group { margin-bottom: 10px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; }
+    input:focus, select:focus { border-color: #ea580c; }
+    .btn-primary { width: 100%; padding: 12px; background-color: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-top: 10px; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
 
-    .btn-logout {
-      margin-top: 10px;
-      background: #334155;
-      color: #f8fafc;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
+    /* Resumen Diario Movimientos */
+    .daily-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+    .txt-green { color: #16a34a; font-weight: 600; }
+    .txt-red { color: #dc2626; font-weight: 600; }
 
-    .hidden {
-      display: none !important;
-    }
-
-    .form-group {
-      margin-bottom: 12px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      margin-bottom: 5px;
-      color: #cbd5e1;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="password"],
-    select {
-      width: 100%;
-      padding: 12px;
-      background-color: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 1rem;
-      margin-bottom: 8px;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: #38bdf8;
-    }
-
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 12px 0;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 14px;
-      background-color: #0284c7;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn-secondary {
-      width: 100%;
-      padding: 10px;
-      background-color: #334155;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 5px;
-    }
-
-    .btn-warning {
-      background-color: #f59e0b;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 15px;
-      background: #0f172a;
-      padding: 4px;
-      border-radius: 8px;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 10px;
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-
-    .tab-btn.active {
-      background: #0284c7;
-      color: white;
-    }
-
-    .alert {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 15px;
-      font-size: 0.85rem;
-    }
-
-    .alert-danger {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      color: #fca5a5;
-    }
-
-    .inner-card {
-      background: #0f172a;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      border: 1px solid #334155;
-    }
-
-    .card-title {
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: #38bdf8;
-    }
-
-    .summary-box {
-      background-color: #0f172a;
-      border: 1px solid #38bdf8;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 15px;
-      font-size: 0.9rem;
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .metric-card {
-      background: #0f172a;
-      padding: 10px 5px;
-      border-radius: 8px;
-      text-align: center;
-      border: 1px solid #334155;
-    }
-
-    .metric-card span {
-      display: block;
-      font-size: 0.7rem;
-      color: #94a3b8;
-    }
-
-    .metric-card strong {
-      font-size: 0.9rem;
-      color: #22c55e;
-    }
-
-    .divider {
-      border: 0;
-      height: 1px;
-      background: #334155;
-      margin: 20px 0;
-    }
-
-    .chart-container {
-      margin-top: 15px;
-    }
+    /* Navegación Inferior (Estilo App Movil) */
+    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; text-decoration: none; cursor: pointer; }
+    .nav-item.active { color: #ea580c; font-weight: bold; }
+    .nav-item span { font-size: 1.2rem; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Los Chamos</h1>
-      <p id="subtitulo-header">Sistema de Control Operativo</p>
-      <button id="btn-logout" class="btn-logout hidden" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
-    </header>
 
-    <!-- PANTALLA LOGIN -->
+  <header>
+    <h1>Los Chamos</h1>
+    <button id="btn-logout" class="btn-logout hidden" onclick="cerrarSesion()">Salir 🔒</button>
+  </header>
+
+  <div class="container">
+
+    <!-- LOGIN -->
     <section id="sec-login">
-      <h3>Iniciar Sesión</h3>
-      <form id="form-login" onsubmit="iniciarSesion(event)" style="margin-top: 15px;">
-        <div class="form-group">
-          <label>Usuario:</label>
-          <input type="text" id="login-usuario" placeholder="Ej: admin" required>
-        </div>
-        <div class="form-group">
-          <label>Contraseña / PIN:</label>
-          <input type="password" id="login-pin" placeholder="****" required>
-        </div>
-        <button type="submit" class="btn-primary">Ingresar</button>
-      </form>
-      <div id="login-error" class="alert hidden alert-danger">
-        ⚠️ Usuario o contraseña incorrectos.
+      <div class="inner-card" style="margin-top: 20px;">
+        <h2 style="margin-bottom: 15px; color:#ea580c;">Iniciar Sesión</h2>
+        <form onsubmit="iniciarSesion(event)">
+          <div class="form-group">
+            <label>Usuario:</label>
+            <input type="text" id="login-usuario" placeholder="Ej: admin" required>
+          </div>
+          <div class="form-group">
+            <label>PIN de Acceso:</label>
+            <input type="password" id="login-pin" placeholder="****" required>
+          </div>
+          <button type="submit" class="btn-primary">Ingresar al Sistema</button>
+        </form>
+        <p id="login-error" class="hidden" style="color:red; font-size:0.8rem; margin-top:10px;">⚠️ Credenciales incorrectas</p>
       </div>
     </section>
 
-    <!-- ENCARGADA -->
+    <!-- PANEL ADMIN (HUB PRINCIPAL) -->
+    <section id="sec-admin" class="hidden">
+      
+      <!-- Sub-pestana: Finanzas / Cuentas -->
+      <div id="admin-view-hub">
+        <!-- Saldos de Cuentas BANCARIAS -->
+        <div class="balance-card">
+          <div style="font-size: 0.85rem; color: #94a3b8;">Disponible en Cuentas:</div>
+          <div class="balance-grid">
+            <div class="balance-item">
+              <span>Bancolombia</span>
+              <strong id="saldo-bancolombia">$0</strong>
+            </div>
+            <div class="balance-item">
+              <span>Nequi</span>
+              <strong id="saldo-nequi">$0</strong>
+            </div>
+            <div class="balance-item">
+              <span>Efectivo</span>
+              <strong id="saldo-efectivo">$0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registro Diario Simple (Sin gráficas) -->
+        <div class="inner-card">
+          <h3 style="font-size: 0.95rem; margin-bottom: 10px; color:#1e293b;">📅 Histórico Diarios de Flujo</h3>
+          <div id="lista-movimientos-diarios">
+            <!-- Render dinámico diario -->
+          </div>
+        </div>
+
+        <!-- Menú de Acceso Rápido (Tarjetas como la foto) -->
+        <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Gestión de Módulos</h3>
+        <div class="grid-cards">
+          <div class="app-card" onclick="verSubModuloAdmin('bebidas')">
+            <div class="card-icon icon-blue">🥤</div>
+            <div class="card-title">Stock Bebidas</div>
+            <div class="card-desc">Catálogo, precios y stock disponible</div>
+          </div>
+          <div class="app-card" onclick="verSubModuloAdmin('cocina')">
+            <div class="card-icon icon-green">🥬</div>
+            <div class="card-title">Stock Cocina</div>
+            <div class="card-desc">Insumos y stock sugerido ideal</div>
+          </div>
+          <div class="app-card" onclick="verSubModuloAdmin('usuarios')">
+            <div class="card-icon icon-purple">👥</div>
+            <div class="card-title">Usuarios / PINs</div>
+            <div class="card-desc">Personal y permisos de acceso</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-modulo: Gestión Bebidas -->
+      <div id="admin-view-bebidas" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>🥤 Configuración de Bebidas</h3>
+        <div id="admin-lista-bebidas" style="margin: 10px 0;"></div>
+        <form onsubmit="agregarNuevaBebida(event)" class="inner-card">
+          <h4>➕ Agregar Nueva Bebida</h4>
+          <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Club Colombia)" required>
+          <input type="number" id="nueva-bebida-precio" placeholder="Precio Venta ($ COP)" required>
+          <input type="number" id="nueva-bebida-stock" placeholder="Stock Inicial" required>
+          <button type="submit" class="btn-primary">Guardar Bebida</button>
+        </form>
+      </div>
+
+      <!-- Sub-modulo: Gestión Cocina -->
+      <div id="admin-view-cocina" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>🥬 Stock Sugerido de Cocina</h3>
+        <div id="admin-lista-cocina" style="margin: 10px 0;"></div>
+        <form onsubmit="agregarNuevoInsumo(event)" class="inner-card">
+          <h4>➕ Agregar Insumo Ideal</h4>
+          <input type="text" id="nuevo-insumo-nombre" placeholder="Nombre (Ej: Jamón)" required>
+          <input type="text" id="nuevo-insumo-unidad" placeholder="Unidad (gr, und, paquete)" required>
+          <input type="number" id="nuevo-insumo-ideal" placeholder="Cantidad Sugerida Ideal" required>
+          <button type="submit" class="btn-primary">Guardar Insumo Ideal</button>
+        </form>
+      </div>
+
+      <!-- Sub-modulo: Usuarios -->
+      <div id="admin-view-usuarios" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>👥 Gestión de Personal</h3>
+        <div id="admin-lista-usuarios" style="margin: 10px 0;"></div>
+        <form onsubmit="agregarNuevoUsuario(event)" class="inner-card">
+          <h4>➕ Crear Nuevo Usuario</h4>
+          <input type="text" id="nuevo-user-nombre" placeholder="Nombre de usuario" required>
+          <input type="password" id="nuevo-user-pin" placeholder="PIN" required>
+          <select id="nuevo-user-rol" style="margin-top:5px;">
+            <option value="encargada">Encargada</option>
+            <option value="cocina">Cocina</option>
+            <option value="admin">Administradora</option>
+          </select>
+          <button type="submit" class="btn-primary">Crear Usuario</button>
+        </form>
+      </div>
+
+    </section>
+
+    <!-- MÓDULO ENCARGADA -->
     <section id="sec-encargada" class="hidden">
-      <div class="tabs">
-        <button id="tab-btn-apertura" class="tab-btn active" onclick="cambiarTabEncargada('apertura')">Apertura</button>
-        <button id="tab-btn-gastos" class="tab-btn" onclick="cambiarTabEncargada('gastos')">Compras / Gastos</button>
-        <button id="tab-btn-cierre" class="tab-btn" onclick="cambiarTabEncargada('cierre')">Cierre</button>
-      </div>
-
-      <!-- TAB APERTURA -->
-      <div id="tab-apertura" class="tab-content">
-        <h3>Inventario Inicial de Bebidas</h3>
-        <div id="lista-bebidas-inicio"></div>
-        <button class="btn-primary" onclick="guardarApertura()">Confirmar Apertura de Turno</button>
-        <div id="alerta-discrepancia" class="alert hidden"></div>
-      </div>
-
-      <!-- TAB GASTOS -->
-      <div id="tab-gastos" class="tab-content hidden">
-        <h3>Registrar Compra / Gasto</h3>
-        <form id="form-gasto" onsubmit="registrarGasto(event)">
+      <h3>📋 Control de Turno - Encargada</h3>
+      <div id="tab-encargada-gastos" class="inner-card" style="margin-top:10px;">
+        <h4>Registrar Gasto del Turno</h4>
+        <form onsubmit="registrarGasto(event)">
           <div class="form-group">
             <label>Concepto:</label>
-            <input type="text" id="gasto-concepto" placeholder="Ej: Hielo, Limones, Hortalizas" required>
+            <input type="text" id="gasto-concepto" placeholder="Ej: Compra Limones" required>
           </div>
           <div class="form-group">
             <label>Valor ($ COP):</label>
             <input type="number" id="gasto-valor" placeholder="0" required>
           </div>
-
-          <label class="checkbox-container">
-            <input type="checkbox" id="gasto-es-bebida" onchange="toggleBebidasCompra()"> Es reposición de Bebidas
-          </label>
-
-          <div id="compra-bebida-fields" class="hidden inner-card">
-            <div class="form-group">
-              <label>Seleccionar Bebida:</label>
-              <select id="select-bebida-compra"></select>
-            </div>
-            <div class="form-group">
-              <label>Cantidad comprada:</label>
-              <input type="number" id="cant-bebida-compra" value="1">
-            </div>
+          <div class="form-group">
+            <label>Pagado desde la cuenta de:</label>
+            <select id="gasto-cuenta">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Bancolombia">Bancolombia</option>
+            </select>
           </div>
-
           <button type="submit" class="btn-primary">Registrar Gasto</button>
         </form>
       </div>
 
-      <!-- TAB CIERRE -->
-      <div id="tab-cierre" class="tab-content hidden">
-        <h3>Inventario Final de Bebidas</h3>
-        <div id="lista-bebidas-cierre"></div>
-        
-        <h3>Recaudo en Caja</h3>
-        <div class="form-group">
-          <label>Efectivo ($):</label>
-          <input type="number" id="cierre-efectivo" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Nequi ($):</label>
-          <input type="number" id="cierre-nequi" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Bancolombia ($):</label>
-          <input type="number" id="cierre-bancolombia" placeholder="0">
-        </div>
-
-        <button class="btn-primary btn-warning" onclick="generarReporteCierre()">Finalizar Turno y Generar Reporte</button>
-        <div id="resumen-cierre" class="summary-box hidden"></div>
+      <div class="inner-card">
+        <h4>Reporte Cierre e Ingresos</h4>
+        <div class="form-group"><label>Efectivo Ingresado ($):</label><input type="number" id="cierre-efectivo" value="0"></div>
+        <div class="form-group"><label>Nequi Ingresado ($):</label><input type="number" id="cierre-nequi" value="0"></div>
+        <div class="form-group"><label>Bancolombia Ingresado ($):</label><input type="number" id="cierre-bancolombia" value="0"></div>
+        <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Enviar Cierre por WhatsApp</button>
       </div>
     </section>
 
-    <!-- COCINA -->
+    <!-- MÓDULO COCINA -->
     <section id="sec-cocina" class="hidden">
-      <h3>Inventario de Cocina e Insumos</h3>
+      <h3>👨‍🍳 Conteo Físico en Cocina</h3>
+      <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa la cantidad física disponible hoy:</p>
       <div id="lista-cocina"></div>
-      <button class="btn-primary" onclick="generarListaCompras()">Generar Lista de Compras</button>
-      <div id="reporte-compras" class="summary-box hidden"></div>
+      <button class="btn-primary" onclick="generarListaCompras()">Generar y Enviar Lista de Compras</button>
     </section>
 
-    <!-- ADMINISTRADORA -->
-    <section id="sec-admin" class="hidden">
-      <h3>Panel de Control Financiero</h3>
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <span>Efectivo Caja</span>
-          <strong id="saldo-efectivo">$0</strong>
-        </div>
-        <div class="metric-card">
-          <span>Nequi</span>
-          <strong id="saldo-nequi">$0</strong>
-        </div>
-        <div class="metric-card">
-          <span>Bancolombia</span>
-          <strong id="saldo-bancolombia">$0</strong>
-        </div>
-      </div>
-
-      <div class="chart-container">
-        <canvas id="chartFinanzas"></canvas>
-      </div>
-
-      <hr class="divider">
-      <h3>📦 Gestión de Inventario y Precios</h3>
-      
-      <h4 style="margin-top:10px; font-size:0.9rem;">Bebidas y Precios de Venta</h4>
-      <div id="admin-gestion-bebidas" style="margin-top:8px;"></div>
-      
-      <form id="form-add-bebida" onsubmit="agregarNuevaBebida(event)" class="inner-card">
-        <p class="card-title">➕ Agregar Nueva Bebida:</p>
-        <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Cerveza Club)" required>
-        <input type="number" id="nueva-bebida-precio" placeholder="Precio ($ COP)" required>
-        <input type="number" id="nueva-bebida-stock" placeholder="Stock Inicial" required>
-        <button type="submit" class="btn-secondary">Guardar Bebida</button>
-      </form>
-
-      <hr class="divider">
-      <h3>👥 Usuarios y Permisos</h3>
-      <div id="admin-lista-usuarios" style="margin-top:8px;"></div>
-
-      <form id="form-add-usuario" onsubmit="agregarNuevoUsuario(event)" class="inner-card">
-        <p class="card-title">➕ Crear Nuevo Usuario:</p>
-        <input type="text" id="nuevo-user-nombre" placeholder="Usuario (Ej: maria)" required>
-        <input type="password" id="nuevo-user-pin" placeholder="PIN / Contraseña" required>
-        <select id="nuevo-user-rol" style="margin-bottom:8px;">
-          <option value="encargada">Encargada (Bebidas / Caja)</option>
-          <option value="cocina">Cocina (Insumos)</option>
-          <option value="admin">Administradora (Acceso Total)</option>
-        </select>
-        <button type="submit" class="btn-secondary">Crear Usuario</button>
-      </form>
-    </section>
   </div>
+
+  <!-- NAVEGACIÓN INFERIOR ESTILO APP -->
+  <nav id="app-nav" class="nav-bottom hidden">
+    <div class="nav-item active" onclick="navegarBarra('hub')">
+      <span>🏠</span> Hub
+    </div>
+    <div class="nav-item" onclick="navegarBarra('bebidas')">
+      <span>🥤</span> Bebidas
+    </div>
+    <div class="nav-item" onclick="navegarBarra('cocina')">
+      <span>🥬</span> Cocina
+    </div>
+  </nav>
 
   <script src="app.js"></script>
 </body>
