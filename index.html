@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Los Chamos - Gestión</title>
+  <title>Los Chamos - Control Operativo</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -12,22 +12,24 @@
     <header>
       <h1>Los Chamos</h1>
       <p id="subtitulo-header">Sistema de Control Operativo</p>
-      <button id="btn-logout" class="hidden btn-secondary" onclick="cerrarSesion()" style="margin-top: 5px;">🔒 Cerrar Sesión</button>
+      <button id="btn-logout" class="btn-logout hidden" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
     </header>
 
     <!-- PANTALLA LOGIN -->
     <section id="sec-login">
       <h3>Iniciar Sesión</h3>
-      <form id="form-login" onsubmit="iniciarSesion(event)" style="margin-top: 15px;">
-        <label>Usuario:</label>
-        <input type="text" id="login-usuario" placeholder="Ej: admin" required>
-        
-        <label>Contraseña / PIN:</label>
-        <input type="password" id="login-pin" placeholder="****" required>
-        
-        <button type="submit" class="btn-primary" style="margin-top: 15px;">Ingresar</button>
+      <form id="form-login" onsubmit="iniciarSesion(event)">
+        <div class="form-group">
+          <label>Usuario:</label>
+          <input type="text" id="login-usuario" placeholder="Ej: admin" required>
+        </div>
+        <div class="form-group">
+          <label>Contraseña / PIN:</label>
+          <input type="password" id="login-pin" placeholder="****" required>
+        </div>
+        <button type="submit" class="btn-primary">Ingresar</button>
       </form>
-      <div id="login-error" class="alert hidden" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; margin-top: 10px;">
+      <div id="login-error" class="alert hidden alert-danger">
         ⚠️ Usuario o contraseña incorrectos.
       </div>
     </section>
@@ -52,21 +54,28 @@
       <div id="tab-gastos" class="tab-content hidden">
         <h3>Registrar Compra / Gasto</h3>
         <form id="form-gasto" onsubmit="registrarGasto(event)">
-          <label>Concepto:</label>
-          <input type="text" id="gasto-concepto" placeholder="Ej: Hielo, Limones, Hortalizas" required>
-          
-          <label>Valor ($ COP):</label>
-          <input type="number" id="gasto-valor" placeholder="0" required>
+          <div class="form-group">
+            <label>Concepto:</label>
+            <input type="text" id="gasto-concepto" placeholder="Ej: Hielo, Limones, Hortalizas" required>
+          </div>
+          <div class="form-group">
+            <label>Valor ($ COP):</label>
+            <input type="number" id="gasto-valor" placeholder="0" required>
+          </div>
 
-          <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;">
+          <label class="checkbox-container">
             <input type="checkbox" id="gasto-es-bebida" onchange="toggleBebidasCompra()"> Es reposición de Bebidas
           </label>
 
-          <div id="compra-bebida-fields" class="hidden" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-            <label>Seleccionar Bebida:</label>
-            <select id="select-bebida-compra"></select>
-            <label>Cantidad comprada:</label>
-            <input type="number" id="cant-bebida-compra" value="1">
+          <div id="compra-bebida-fields" class="hidden inner-card">
+            <div class="form-group">
+              <label>Seleccionar Bebida:</label>
+              <select id="select-bebida-compra"></select>
+            </div>
+            <div class="form-group">
+              <label>Cantidad comprada:</label>
+              <input type="number" id="cant-bebida-compra" value="1">
+            </div>
           </div>
 
           <button type="submit" class="btn-primary">Registrar Gasto</button>
@@ -79,14 +88,20 @@
         <div id="lista-bebidas-cierre"></div>
         
         <h3>Recaudo en Caja</h3>
-        <label>Efectivo ($):</label>
-        <input type="number" id="cierre-efectivo" placeholder="0">
-        <label>Nequi ($):</label>
-        <input type="number" id="cierre-nequi" placeholder="0">
-        <label>Bancolombia ($):</label>
-        <input type="number" id="cierre-bancolombia" placeholder="0">
+        <div class="form-group">
+          <label>Efectivo ($):</label>
+          <input type="number" id="cierre-efectivo" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Nequi ($):</label>
+          <input type="number" id="cierre-nequi" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Bancolombia ($):</label>
+          <input type="number" id="cierre-bancolombia" placeholder="0">
+        </div>
 
-        <button class="btn-primary" style="background: #f59e0b;" onclick="generarReporteCierre()">Finalizar Turno y Generar Reporte</button>
+        <button class="btn-primary btn-warning" onclick="generarReporteCierre()">Finalizar Turno y Generar Reporte</button>
         <div id="resumen-cierre" class="summary-box hidden"></div>
       </div>
     </section>
@@ -117,35 +132,33 @@
         </div>
       </div>
 
-      <div style="margin-top: 20px;">
+      <div class="chart-container">
         <canvas id="chartFinanzas"></canvas>
       </div>
 
-      <!-- SUBSECCIÓN: GESTIÓN DE INVENTARIOS -->
-      <hr style="border-color: #334155; margin: 25px 0;">
+      <hr class="divider">
       <h3>📦 Gestión de Inventario y Precios</h3>
       
       <h4>Bebidas y Precios de Venta</h4>
       <div id="admin-gestion-bebidas"></div>
       
-      <form id="form-add-bebida" onsubmit="agregarNuevaBebida(event)" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-top: 10px;">
-        <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">➕ Agregar Nueva Bebida:</p>
+      <form id="form-add-bebida" onsubmit="agregarNuevaBebida(event)" class="inner-card">
+        <p class="card-title">➕ Agregar Nueva Bebida:</p>
         <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Cerveza Club)" required>
         <input type="number" id="nueva-bebida-precio" placeholder="Precio ($ COP)" required>
         <input type="number" id="nueva-bebida-stock" placeholder="Stock Inicial" required>
-        <button type="submit" class="btn-secondary" style="margin-top: 5px;">Guardar Bebida</button>
+        <button type="submit" class="btn-secondary">Guardar Bebida</button>
       </form>
 
-      <!-- SUBSECCIÓN: GESTIÓN DE USUARIOS Y PERMISOS -->
-      <hr style="border-color: #334155; margin: 25px 0;">
+      <hr class="divider">
       <h3>👥 Usuarios y Permisos</h3>
       <div id="admin-lista-usuarios"></div>
 
-      <form id="form-add-usuario" onsubmit="agregarNuevoUsuario(event)" style="background: #0f172a; padding: 10px; border-radius: 8px; margin-top: 10px;">
-        <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">➕ Crear Nuevo Usuario:</p>
+      <form id="form-add-usuario" onsubmit="agregarNuevoUsuario(event)" class="inner-card">
+        <p class="card-title">➕ Crear Nuevo Usuario:</p>
         <input type="text" id="nuevo-user-nombre" placeholder="Usuario (Ej: maria)" required>
         <input type="password" id="nuevo-user-pin" placeholder="PIN / Contraseña" required>
-        <select id="nuevo-user-rol" style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; color: white; border: 1px solid #334155; margin-bottom: 10px;">
+        <select id="nuevo-user-rol" class="select-full">
           <option value="encargada">Encargada (Bebidas / Caja)</option>
           <option value="cocina">Cocina (Insumos)</option>
           <option value="admin">Administradora (Acceso Total)</option>
