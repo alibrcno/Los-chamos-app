@@ -13,14 +13,13 @@ let db = {
     { id: 1, nombre: 'Jamón', cantidad: 500, unidad: 'gr', ideal: 1000 },
     { id: 2, nombre: 'Lechuga', cantidad: 2, unidad: 'und', ideal: 5 }
   ],
-  movimientos: JSON.parse(localStorage.getItem('chamos_movimientos')) || [
-    { fecha: 'Lunes', ingresos: { Efectivo: 50000, Nequi: 0, Bancolombia: 0 }, gastos: [{ concepto: 'Hielo', valor: 10000, cuenta: 'Efectivo' }] }
-  ],
+  movimientos: JSON.parse(localStorage.getItem('chamos_movimientos')) || [],
   gastosTurnoActual: [],
+  entradasBebidasTurno: {},
+  inventarioInicialTurno: {},
   usuarioActual: null
 };
 
-// WhatsApp configurado al número directo
 const NUMERO_WHATSAPP = "573218382315";
 
 function guardarBD() {
@@ -49,6 +48,7 @@ function iniciarSesion(e) {
       cargarAdminHub();
     } else if (usuario.rol === 'encargada') {
       document.getElementById('sec-encargada').classList.remove('hidden');
+      cargarAperturaEncargada();
     } else if (usuario.rol === 'cocina') {
       document.getElementById('sec-cocina').classList.remove('hidden');
       cargarInsumosCocina();
@@ -68,24 +68,19 @@ function cerrarSesion() {
   document.getElementById('btn-logout').classList.add('hidden');
 }
 
-// --- PANEL ADMIN & SALDOS DE CUENTAS ---
+// --- MÓDULO ADMIN ---
 function cargarAdminHub() {
-  // Cálculo exacto de Saldos acumulados por cuenta
   let saldos = { Bancolombia: 0, Nequi: 0, Efectivo: 0 };
 
   db.movimientos.forEach(m => {
-    // Sumar Ingresos
     if (m.ingresos) {
       saldos.Bancolombia += m.ingresos.Bancolombia || 0;
       saldos.Nequi += m.ingresos.Nequi || 0;
       saldos.Efectivo += m.ingresos.Efectivo || 0;
     }
-    // Restar Gastos según la cuenta usada
     if (m.gastos) {
       m.gastos.forEach(g => {
-        if (saldos[g.cuenta] !== undefined) {
-          saldos[g.cuenta] -= g.valor;
-        }
+        if (saldos[g.cuenta] !== undefined) saldos[g.cuenta] -= g.valor;
       });
     }
   });
@@ -94,10 +89,9 @@ function cargarAdminHub() {
   document.getElementById('saldo-nequi').innerText = `$${saldos.Nequi.toLocaleString()}`;
   document.getElementById('saldo-efectivo').innerText = `$${saldos.Efectivo.toLocaleString()}`;
 
-  // Vista Simple Diaria (Ej: Lunes - Ingresos: $X | Gastos: $Y)
   const contDiario = document.getElementById('lista-movimientos-diarios');
   if (db.movimientos.length === 0) {
-    contDiario.innerHTML = `<p style="font-size:0.8rem; color:#94a3b8;">Sin movimientos registrados esta semana.</p>`;
+    contDiario.innerHTML = `<p style="font-size:0.8rem; color:#94a3b8;">Sin movimientos registrados.</p>`;
   } else {
     contDiario.innerHTML = db.movimientos.map(m => {
       const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0);
@@ -106,8 +100,8 @@ function cargarAdminHub() {
         <div class="daily-row">
           <div><strong>${m.fecha}</strong></div>
           <div>
-            <span class="txt-green">Ingresos: $${totIngresos.toLocaleString()}</span> | 
-            <span class="txt-red">Gastos: $${totGastos.toLocaleString()}</span>
+            <span class="txt-green">Ing: $${totIngresos.toLocaleString()}</span> | 
+            <span class="txt-red">Gas: $${totGastos.toLocaleString()}</span>
           </div>
         </div>
       `;
@@ -115,7 +109,6 @@ function cargarAdminHub() {
   }
 }
 
-// Sub-navegación dentro de Admin
 function verSubModuloAdmin(modulo) {
   document.getElementById('admin-view-hub').classList.add('hidden');
   document.getElementById('admin-view-bebidas').classList.add('hidden');
@@ -143,25 +136,17 @@ function volverAdminHub() {
 }
 
 function navegarBarra(vista) {
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  if (vista === 'hub') {
-    volverAdminHub();
-  } else if (vista === 'bebidas') {
-    verSubModuloAdmin('bebidas');
-  } else if (vista === 'cocina') {
-    verSubModuloAdmin('cocina');
-  }
+  if (vista === 'hub') volverAdminHub();
+  else if (vista === 'bebidas') verSubModuloAdmin('bebidas');
+  else if (vista === 'cocina') verSubModuloAdmin('cocina');
 }
 
-// RENDER Y GESTIÓN BEBIDAS / COCINA / USUARIOS
+// Config Bebidas, Cocina y Usuarios
 function renderListaBebidasAdmin() {
   const cont = document.getElementById('admin-lista-bebidas');
   cont.innerHTML = db.bebidas.map(b => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <strong>${b.nombre}</strong><br>
-        <small style="color:#64748b;">Precio: $${b.precio.toLocaleString()} | Stock: ${b.stock} unds</small>
-      </div>
+      <div><strong>${b.nombre}</strong><br><small style="color:#64748b;">Precio: $${b.precio.toLocaleString()} | Stock: ${b.stock} unds</small></div>
       <button class="btn-secondary" onclick="eliminarBebida(${b.id})">🗑️</button>
     </div>
   `).join('');
@@ -189,10 +174,7 @@ function renderListaCocinaAdmin() {
   const cont = document.getElementById('admin-lista-cocina');
   cont.innerHTML = db.insumosCocina.map(i => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <strong>${i.nombre}</strong><br>
-        <small style="color:#64748b;">Stock Ideal: ${i.ideal} ${i.unidad}</small>
-      </div>
+      <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock Ideal: ${i.ideal} ${i.unidad}</small></div>
       <button class="btn-secondary" onclick="eliminarInsumo(${i.id})">🗑️</button>
     </div>
   `).join('');
@@ -220,10 +202,7 @@ function renderListaUsuariosAdmin() {
   const cont = document.getElementById('admin-lista-usuarios');
   cont.innerHTML = db.usuarios.map((u, index) => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <strong>${u.usuario}</strong> (${u.rol})<br>
-        <small style="color:#64748b;">PIN: ${u.pin}</small>
-      </div>
+      <div><strong>${u.usuario}</strong> (${u.rol})<br><small style="color:#64748b;">PIN: ${u.pin}</small></div>
       ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
     </div>
   `).join('');
@@ -247,7 +226,49 @@ function eliminarUsuario(index) {
   renderListaUsuariosAdmin();
 }
 
-// --- MÓDULO ENCARGADA Y GASTOS CON DESCUENTO DE CUENTA ---
+// --- MÓDULO ENCARGADA (APERTURA, OPERACIONES Y CIERRE) ---
+function cargarAperturaEncargada() {
+  document.getElementById('encargada-step-apertura').classList.remove('hidden');
+  document.getElementById('encargada-step-operacion').classList.add('hidden');
+  document.getElementById('encargada-step-cierre').classList.add('hidden');
+
+  const cont = document.getElementById('lista-apertura-bebidas');
+  cont.innerHTML = db.bebidas.map(b => `
+    <div class="form-group">
+      <label>${b.nombre} (Debe haber: ${b.stock}):</label>
+      <input type="number" id="apertura-bebida-${b.id}" value="${b.stock}">
+    </div>
+  `).join('');
+}
+
+function validarYGuardarApertura() {
+  let descuadres = [];
+  db.inventarioInicialTurno = {};
+
+  db.bebidas.forEach(b => {
+    const cantInicial = parseInt(document.getElementById(`apertura-bebida-${b.id}`).value) || 0;
+    db.inventarioInicialTurno[b.id] = cantInicial;
+
+    if (cantInicial !== b.stock) {
+      descuadres.push(`${b.nombre}: Sistema tenía ${b.stock}, pero física es ${cantInicial}`);
+    }
+  });
+
+  if (descuadres.length > 0) {
+    alert("⚠️ Se registraron los siguientes descuadres al iniciar:\n" + descuadres.join('\n'));
+  }
+
+  // Cargar selector de compras
+  const select = document.getElementById('entrada-bebida-id');
+  select.innerHTML = db.bebidas.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
+
+  db.gastosTurnoActual = [];
+  db.entradasBebidasTurno = {};
+
+  document.getElementById('encargada-step-apertura').classList.add('hidden');
+  document.getElementById('encargada-step-operacion').classList.remove('hidden');
+}
+
 function registrarGasto(e) {
   e.preventDefault();
   const concepto = document.getElementById('gasto-concepto').value;
@@ -255,14 +276,69 @@ function registrarGasto(e) {
   const cuenta = document.getElementById('gasto-cuenta').value;
 
   db.gastosTurnoActual.push({ concepto, valor, cuenta });
-  alert(`✅ Gasto registrado y descontado de ${cuenta}`);
+  alert(`✅ Gasto registrado ($${valor.toLocaleString()})`);
   e.target.reset();
+}
+
+function registrarEntradaBebida(e) {
+  e.preventDefault();
+  const bId = document.getElementById('entrada-bebida-id').value;
+  const cant = parseInt(document.getElementById('entrada-bebida-cant').value) || 0;
+
+  if (!db.entradasBebidasTurno[bId]) db.entradasBebidasTurno[bId] = 0;
+  db.entradasBebidasTurno[bId] += cant;
+
+  alert(`✅ Registrada entrada de +${cant} unidades`);
+  e.target.reset();
+}
+
+function irACierreTurno() {
+  document.getElementById('encargada-step-operacion').classList.add('hidden');
+  document.getElementById('encargada-step-cierre').classList.remove('hidden');
+
+  const cont = document.getElementById('lista-cierre-bebidas');
+  cont.innerHTML = db.bebidas.map(b => {
+    const inicial = db.inventarioInicialTurno[b.id] || 0;
+    const entradas = db.entradasBebidasTurno[b.id] || 0;
+    const totalEsperadoSinVentas = inicial + entradas;
+
+    return `
+      <div class="form-group">
+        <label>${b.nombre} (Stock Disponible + Entradas = ${totalEsperadoSinVentas}):</label>
+        <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final física">
+      </div>
+    `;
+  }).join('');
+}
+
+function volverAOperacion() {
+  document.getElementById('encargada-step-cierre').classList.add('hidden');
+  document.getElementById('encargada-step-operacion').classList.remove('hidden');
 }
 
 function generarReporteCierre() {
   const efec = parseFloat(document.getElementById('cierre-efectivo').value) || 0;
   const neq = parseFloat(document.getElementById('cierre-nequi').value) || 0;
   const ban = parseFloat(document.getElementById('cierre-bancolombia').value) || 0;
+  const totalReportadoDinero = efec + neq + ban;
+
+  let dineroDebeHaberBebidas = 0;
+  let resumenBebidasMsg = "";
+
+  db.bebidas.forEach(b => {
+    const inicial = db.inventarioInicialTurno[b.id] || 0;
+    const entradas = db.entradasBebidasTurno[b.id] || 0;
+    const finalFisico = parseInt(document.getElementById(`cierre-bebida-${b.id}`).value) || 0;
+
+    const vendidas = (inicial + entradas) - finalFisico;
+    const totalVentaBebida = vendidas * b.precio;
+    dineroDebeHaberBebidas += totalVentaBebida;
+
+    resumenBebidasMsg += `• ${b.nombre}: Quedan ${finalFisico} (Vendidas: ${vendidas} = $${totalVentaBebida.toLocaleString()})\n`;
+
+    // Actualizar stock oficial para el próximo día
+    b.stock = finalFisico;
+  });
 
   const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const hoyNombre = dias[new Date().getDay()];
@@ -275,48 +351,62 @@ function generarReporteCierre() {
 
   guardarBD();
 
-  let msg = `*📊 CIERRE Y RECAUDO - LOS CHAMOS*\n📅 ${hoyNombre} ${new Date().toLocaleDateString()}\n\n`;
-  msg += `*💰 INGRESOS:*\n- Efectivo: $${efec.toLocaleString()}\n- Nequi: $${neq.toLocaleString()}\n- Bancolombia: $${ban.toLocaleString()}\n\n`;
-  msg += `*💸 GASTOS:*\n`;
-  db.gastosTurnoActual.forEach(g => {
-    msg += `- ${g.concepto}: $${g.valor.toLocaleString()} (${g.cuenta})\n`;
-  });
+  let msg = `*📊 CIERRE Y AUDITORÍA - LOS CHAMOS*\n📅 ${hoyNombre} ${new Date().toLocaleDateString()}\n\n`;
+  msg += `*🥤 INVENTARIO Y VENTAS DE BEBIDAS:*\n${resumenBebidasMsg}\n`;
+  msg += `*💵 AUDITORÍA FINANCIERA:*\n`;
+  msg += `- Dinero que DEBE HABER por Bebidas: $${dineroDebeHaberBebidas.toLocaleString()}\n`;
+  msg += `- Dinero TOTAL REPORTADO: $${totalReportadoDinero.toLocaleString()}\n`;
+  msg += `  (Efectivo: $${efec.toLocaleString()} | Nequi: $${neq.toLocaleString()} | Bancolombia: $${ban.toLocaleString()})\n\n`;
 
-  db.gastosTurnoActual = [];
+  msg += `*💸 GASTOS DEL TURNO:*\n`;
+  if (db.gastosTurnoActual.length === 0) {
+    msg += `- Sin gastos registrados.\n`;
+  } else {
+    db.gastosTurnoActual.forEach(g => {
+      msg += `- ${g.concepto}: $${g.valor.toLocaleString()} (${g.cuenta})\n`;
+    });
+  }
 
   const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
   cerrarSesion();
 }
 
-// --- MÓDULO COCINA Y COMPRAS SEGÚN STOCK SUGERIDO ---
+// --- MÓDULO COCINA ---
 function cargarInsumosCocina() {
   const cont = document.getElementById('lista-cocina');
   cont.innerHTML = db.insumosCocina.map(i => `
     <div class="inner-card">
-      <label><strong>${i.nombre}</strong> (Sugerido Ideal: ${i.ideal} ${i.unidad})</label>
+      <label><strong>${i.nombre}</strong> (Ideal: ${i.ideal} ${i.unidad})</label>
       <input type="number" id="cocina-cant-${i.id}" value="${i.cantidad}" placeholder="Hay en cocina">
     </div>
   `).join('');
 }
 
-function generarListaCompras() {
-  let msg = `*🛒 LISTA DE COMPRAS COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
-  let lista = [];
+function generarReporteCocina() {
+  let msg = `*🥬 INVENTARIO Y PEDIDO COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
+  let disponibles = [];
+  let compras = [];
 
   db.insumosCocina.forEach(i => {
     const cantActual = parseFloat(document.getElementById(`cocina-cant-${i.id}`).value) || 0;
     i.cantidad = cantActual;
+    
+    disponibles.push(`• ${i.nombre}: ${cantActual} ${i.unidad}`);
+
     if (cantActual < i.ideal) {
       const faltante = i.ideal - cantActual;
-      lista.push(`• ${faltante} ${i.unidad} de ${i.nombre}`);
+      compras.push(`• Comprar ${faltante} ${i.unidad} de ${i.nombre}`);
     }
   });
 
-  if (lista.length > 0) {
-    msg += `*FALTANTES Y PEDIDO:* \n` + lista.join('\n');
-  } else {
-    msg += `✅ Stock completo en cocina.`;
+  const observaciones = document.getElementById('cocina-observaciones').value.trim();
+
+  msg += `*📦 STOCK DISPONIBLE HOY:*\n` + disponibles.join('\n') + `\n\n`;
+  msg += `*🛒 COMPRAS SUGERIDAS:* \n` + (compras.length > 0 ? compras.join('\n') : '✅ Stock completo.') + `\n\n`;
+
+  if (observaciones !== "") {
+    msg += `*📝 OBSERVACIONES / NOVEDADES:*\n${observaciones}\n`;
   }
 
   guardarBD();
