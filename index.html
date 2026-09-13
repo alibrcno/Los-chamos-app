@@ -6,10 +6,10 @@
   <title>Los Chamos - Control Operativo</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: #f8fafc; color: #0f172a; min-height: 100vh; padding-bottom: 70px; }
+    body { background-color: #f8fafc; color: #0f172a; min-height: 100vh; padding-bottom: 75px; }
     
     header { background-color: #ea580c; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header h1 { font-size: 1.3rem; font-weight: 700; }
     .btn-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
 
     .container { max-width: 500px; margin: 0 auto; padding: 15px; }
@@ -26,12 +26,14 @@
     .icon-green { background: #22c55e; }
     .icon-blue { background: #3b82f6; }
     .icon-purple { background: #a855f7; }
+    .icon-amber { background: #f59e0b; }
+    .icon-slate { background: #475569; }
 
     .balance-card { background: #0f172a; color: white; border-radius: 14px; padding: 15px; margin-bottom: 15px; }
     .balance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; text-align: center; }
     .balance-item { background: #1e293b; padding: 10px; border-radius: 8px; }
     .balance-item span { font-size: 0.7rem; color: #94a3b8; display: block; }
-    .balance-item strong { font-size: 0.9rem; color: #38bdf8; }
+    .balance-item strong { font-size: 0.85rem; color: #38bdf8; }
 
     .inner-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
     .form-group { margin-bottom: 10px; }
@@ -41,9 +43,15 @@
     .btn-primary { width: 100%; padding: 12px; background-color: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-top: 10px; }
     .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
 
-    .daily-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+    .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
     .txt-green { color: #16a34a; font-weight: 600; }
     .txt-red { color: #dc2626; font-weight: 600; }
+
+    .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+    .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ea580c; }
+
+    .bar-container { background: #e2e8f0; border-radius: 6px; height: 12px; overflow: hidden; margin-top: 4px; }
+    .bar-fill { background: #ea580c; height: 100%; border-radius: 6px; }
 
     .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
     .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; text-decoration: none; cursor: pointer; }
@@ -54,7 +62,7 @@
 <body>
 
   <header>
-    <h1>Los Chamos</h1>
+    <h1>Los Chamos Admin</h1>
     <button id="btn-logout" class="btn-logout hidden" onclick="cerrarSesion()">Salir 🔒</button>
   </header>
 
@@ -79,7 +87,7 @@
       </div>
     </section>
 
-    <!-- PANEL ADMIN -->
+    <!-- PANEL ADMIN HUB -->
     <section id="sec-admin" class="hidden">
       <div id="admin-view-hub">
         <div class="balance-card">
@@ -100,22 +108,37 @@
           </div>
         </div>
 
-        <div class="inner-card">
-          <h3 style="font-size: 0.95rem; margin-bottom: 10px; color:#1e293b;">📅 Histórico Diarios de Flujo</h3>
-          <div id="lista-movimientos-diarios"></div>
-        </div>
-
-        <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Gestión de Módulos</h3>
+        <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Módulos de Gestión</h3>
         <div class="grid-cards">
+          <div class="app-card" onclick="verSubModuloAdmin('almacen')">
+            <div class="card-icon icon-slate">📦</div>
+            <div class="card-title">Almacén Central</div>
+            <div class="card-desc">Bodega general, compras e ingresos/salidas</div>
+          </div>
+          <div class="app-card" onclick="verSubModuloAdmin('finanzas')">
+            <div class="card-icon icon-green">💵</div>
+            <div class="card-title">Caja / Finanzas</div>
+            <div class="card-desc">Registrar ingresos, gastos y arqueo</div>
+          </div>
+          <div class="app-card" onclick="verSubModuloAdmin('desempeno')">
+            <div class="card-icon icon-orange">📈</div>
+            <div class="card-title">Rendimiento Mensual</div>
+            <div class="card-desc">Ventas por día y análisis de flujo</div>
+          </div>
           <div class="app-card" onclick="verSubModuloAdmin('bebidas')">
             <div class="card-icon icon-blue">🥤</div>
             <div class="card-title">Stock Bebidas</div>
-            <div class="card-desc">Catálogo, precios y stock disponible</div>
+            <div class="card-desc">Catálogo, precios y stock local</div>
           </div>
           <div class="app-card" onclick="verSubModuloAdmin('cocina')">
             <div class="card-icon icon-green">🥬</div>
-            <div class="card-title">Stock Cocina</div>
-            <div class="card-desc">Insumos y stock sugerido ideal</div>
+            <div class="card-title">Insumos Cocina</div>
+            <div class="card-desc">Stock sugerido ideal en cocina</div>
+          </div>
+          <div class="app-card" onclick="verSubModuloAdmin('checklist')">
+            <div class="card-icon icon-amber">📋</div>
+            <div class="card-title">Checklist Cocina</div>
+            <div class="card-desc">Tareas de preparación diarias</div>
           </div>
           <div class="app-card" onclick="verSubModuloAdmin('usuarios')">
             <div class="card-icon icon-purple">👥</div>
@@ -125,7 +148,115 @@
         </div>
       </div>
 
-      <!-- Sub-modulo Bebidas Admin -->
+      <!-- Sub-módulo: ALMACÉN CENTRAL -->
+      <div id="admin-view-almacen" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>📦 Almacén y Bodega General</h3>
+
+        <div class="inner-card">
+          <h4>📥 / 📤 Movimiento de Almacén</h4>
+          <form onsubmit="registrarMovimientoAlmacen(event)">
+            <div class="form-group">
+              <label>Seleccionar Ítem:</label>
+              <select id="almacen-item-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Tipo de Operación:</label>
+              <select id="almacen-tipo-op">
+                <option value="entrada">📥 Entrada / Compra para Bodega</option>
+                <option value="salida">📤 Salida / Traslado a Cocina o Barra</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Cantidad:</label>
+              <input type="number" id="almacen-cant-op" placeholder="0" required>
+            </div>
+            <button type="submit" class="btn-primary" style="background-color:#475569;">Registrar Movimiento</button>
+          </form>
+        </div>
+
+        <div class="inner-card">
+          <h4>📦 Inventario en Almacén</h4>
+          <div id="admin-lista-almacen" style="margin-top:10px;"></div>
+        </div>
+
+        <form onsubmit="agregarNuevoItemAlmacen(event)" class="inner-card">
+          <h4>➕ Crear Nuevo Ítem de Almacén</h4>
+          <input type="text" id="nuevo-almacen-nombre" placeholder="Nombre (Ej: Bulto de Harina, Paca de Agua)" required>
+          <input type="text" id="nuevo-almacen-unidad" placeholder="Unidad (Bulto, Paca, Kg, Cta)" required style="margin-top:5px;">
+          <input type="number" id="nuevo-almacen-stock" placeholder="Stock Inicial en Bodega" required style="margin-top:5px;">
+          <button type="submit" class="btn-primary">Guardar Ítem</button>
+        </form>
+      </div>
+
+      <!-- Sub-módulo: FINANZAS / REGISTRO DIRECTO ADMIN -->
+      <div id="admin-view-finanzas" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>💵 Gestión Financiera Admin</h3>
+
+        <div class="inner-card">
+          <h4>💸 Registrar Movimiento Directo (Gasto/Ingreso)</h4>
+          <form onsubmit="registrarMovimientoAdmin(event)">
+            <div class="form-group">
+              <label>Tipo:</label>
+              <select id="admin-fin-tipo">
+                <option value="gasto">🔴 Gasto / Salida de Dinero</option>
+                <option value="ingreso">🟢 Ingreso / Entrada de Dinero</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Concepto:</label>
+              <input type="text" id="admin-fin-concepto" placeholder="Ej: Pago de Proveedor / Arriendo" required>
+            </div>
+            <div class="form-group">
+              <label>Valor ($ COP):</label>
+              <input type="number" id="admin-fin-valor" placeholder="0" required>
+            </div>
+            <div class="form-group">
+              <label>Cuenta:</label>
+              <select id="admin-fin-cuenta">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Nequi">Nequi</option>
+                <option value="Bancolombia">Bancolombia</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary">Registrar Operación</button>
+          </form>
+        </div>
+
+        <div class="inner-card">
+          <h4>📅 Histórico de Flujo Operativo</h4>
+          <div id="lista-movimientos-diarios-finanzas"></div>
+        </div>
+      </div>
+
+      <!-- Sub-módulo: DESEMPEÑO Y RENDIMIENTO MENSUAL -->
+      <div id="admin-view-desempeno" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>📈 Análisis de Rendimiento Mensual</h3>
+
+        <div class="inner-card">
+          <label>Seleccionar Mes:</label>
+          <input type="month" id="desempeno-mes-select" onchange="renderRendimientoMensual()">
+        </div>
+
+        <div class="balance-card">
+          <div style="font-size:0.8rem; color:#94a3b8;">Resumen Financiero del Mes:</div>
+          <div style="font-size:1.4rem; font-weight:bold; color:#38bdf8; margin:5px 0;" id="resumen-mes-utilidad">$0</div>
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:8px;">
+            <span>🟢 Ventas Totales: <strong id="resumen-mes-ventas">$0</strong></span>
+            <span>🔴 Gastos Totales: <strong id="resumen-mes-gastos">$0</strong></span>
+          </div>
+        </div>
+
+        <div class="inner-card">
+          <h4>📊 Ventas Promedio por Día de la Semana</h4>
+          <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Descubre qué día genera más dinero en tu local (Miércoles a Domingo):</p>
+          <div id="desempeno-grafica-dias"></div>
+        </div>
+      </div>
+
+      <!-- Sub-módulo Bebidas Admin -->
       <div id="admin-view-bebidas" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>🥤 Configuración de Bebidas</h3>
@@ -133,13 +264,13 @@
         <form onsubmit="agregarNuevaBebida(event)" class="inner-card">
           <h4>➕ Agregar Nueva Bebida</h4>
           <input type="text" id="nueva-bebida-nombre" placeholder="Nombre (Ej: Club Colombia)" required>
-          <input type="number" id="nueva-bebida-precio" placeholder="Precio Venta ($ COP)" required>
-          <input type="number" id="nueva-bebida-stock" placeholder="Stock Actual" required>
+          <input type="number" id="nueva-bebida-precio" placeholder="Precio Venta ($ COP)" required style="margin-top:5px;">
+          <input type="number" id="nueva-bebida-stock" placeholder="Stock Actual" required style="margin-top:5px;">
           <button type="submit" class="btn-primary">Guardar Bebida</button>
         </form>
       </div>
 
-      <!-- Sub-modulo Cocina Admin -->
+      <!-- Sub-módulo Cocina Admin -->
       <div id="admin-view-cocina" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>🥬 Stock Sugerido de Cocina</h3>
@@ -147,13 +278,25 @@
         <form onsubmit="agregarNuevoInsumo(event)" class="inner-card">
           <h4>➕ Agregar Insumo Ideal</h4>
           <input type="text" id="nuevo-insumo-nombre" placeholder="Nombre (Ej: Jamón)" required>
-          <input type="text" id="nuevo-insumo-unidad" placeholder="Unidad (gr, und, paquete)" required>
-          <input type="number" id="nuevo-insumo-ideal" placeholder="Cantidad Sugerida Ideal" required>
+          <input type="text" id="nuevo-insumo-unidad" placeholder="Unidad (gr, und, paquete)" required style="margin-top:5px;">
+          <input type="number" id="nuevo-insumo-ideal" placeholder="Cantidad Sugerida Ideal" required style="margin-top:5px;">
           <button type="submit" class="btn-primary">Guardar Insumo Ideal</button>
         </form>
       </div>
 
-      <!-- Sub-modulo Usuarios Admin -->
+      <!-- Sub-módulo Checklist Admin -->
+      <div id="admin-view-checklist" class="hidden">
+        <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
+        <h3>📋 Tareas Diarias de Cocina</h3>
+        <div id="admin-lista-checklist" style="margin: 10px 0;"></div>
+        <form onsubmit="agregarNuevaTarea(event)" class="inner-card">
+          <h4>➕ Agregar Tarea de Preparación</h4>
+          <input type="text" id="nueva-tarea-nombre" placeholder="Ej: Hacer salsa de pizza" required>
+          <button type="submit" class="btn-primary">Guardar Tarea</button>
+        </form>
+      </div>
+
+      <!-- Sub-módulo Usuarios Admin -->
       <div id="admin-view-usuarios" class="hidden">
         <button class="btn-secondary" onclick="volverAdminHub()" style="margin-bottom:10px;">← Volver al Menú</button>
         <h3>👥 Gestión de Personal</h3>
@@ -161,7 +304,7 @@
         <form onsubmit="agregarNuevoUsuario(event)" class="inner-card">
           <h4>➕ Crear Nuevo Usuario</h4>
           <input type="text" id="nuevo-user-nombre" placeholder="Nombre de usuario" required>
-          <input type="password" id="nuevo-user-pin" placeholder="PIN" required>
+          <input type="password" id="nuevo-user-pin" placeholder="PIN" required style="margin-top:5px;">
           <select id="nuevo-user-rol" style="margin-top:5px;">
             <option value="encargada">Encargada</option>
             <option value="cocina">Cocina</option>
@@ -172,11 +315,11 @@
       </div>
     </section>
 
-    <!-- MÓDULO ENCARGADA (FLUJO CONTINUO) -->
+    <!-- MÓDULO ENCARGADA -->
     <section id="sec-encargada" class="hidden">
       <h3>📋 Módulo Encargada</h3>
 
-      <!-- Paso 1: Apertura - Inventario Inicial Bebidas -->
+      <!-- Paso 1: Apertura -->
       <div id="encargada-step-apertura" class="inner-card" style="margin-top: 10px;">
         <h4>📦 Apertura de Turno: Inventario Inicial</h4>
         <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Confirma las bebidas recibidas según el cierre anterior:</p>
@@ -184,9 +327,8 @@
         <button onclick="validarYGuardarApertura()" class="btn-primary">Verificar y Pasar a Turno</button>
       </div>
 
-      <!-- Paso 2: Operaciones del Turno (Gastos e Ingresos Bebidas) -->
+      <!-- Paso 2: Operaciones -->
       <div id="encargada-step-operacion" class="hidden">
-        
         <div class="inner-card">
           <h4>💸 Registrar Gasto del Turno</h4>
           <form onsubmit="registrarGasto(event)">
@@ -219,7 +361,7 @@
         <button onclick="irACierreTurno()" class="btn-primary" style="background-color:#ea580c; margin-top:15px;">Ir a Cierre de Turno →</button>
       </div>
 
-      <!-- Paso 3: Cierre de Turno e Inventario Final -->
+      <!-- Paso 3: Cierre -->
       <div id="encargada-step-cierre" class="hidden">
         <button class="btn-secondary" onclick="volverAOperacion()" style="margin-bottom:10px;">← Volver a Operaciones</button>
         
@@ -234,21 +376,37 @@
           <div class="form-group"><label>Efectivo Recaudado ($):</label><input type="number" id="cierre-efectivo" value="0"></div>
           <div class="form-group"><label>Nequi Recaudado ($):</label><input type="number" id="cierre-nequi" value="0"></div>
           <div class="form-group"><label>Bancolombia Recaudado ($):</label><input type="number" id="cierre-bancolombia" value="0"></div>
-          <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Enviar Cierre por WhatsApp</button>
         </div>
+
+        <div class="inner-card">
+          <label><strong>📝 Observaciones / Novedades del Turno:</strong></label>
+          <textarea id="encargada-observaciones" rows="3" placeholder="Ej: Faltó dar un vuelto de $1.000..."></textarea>
+        </div>
+
+        <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Enviar Cierre por WhatsApp</button>
       </div>
 
     </section>
 
-    <!-- MÓDULO COCINA CON OBSERVACIONES -->
+    <!-- MÓDULO COCINA -->
     <section id="sec-cocina" class="hidden">
-      <h3>👨‍🍳 Conteo Físico de Cocina</h3>
-      <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa lo disponible hoy físicamente:</p>
-      <div id="lista-cocina"></div>
+      <h3>👨‍🍳 Módulo Cocina</h3>
+      
+      <div class="inner-card">
+        <h4>📋 Tareas / Preparaciones Diarias</h4>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Marca lo que ya dejaste listo:</p>
+        <div id="lista-checklist-cocina"></div>
+      </div>
+
+      <div class="inner-card">
+        <h4>🥬 Conteo Físico de Insumos</h4>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa lo disponible hoy físicamente:</p>
+        <div id="lista-cocina"></div>
+      </div>
       
       <div class="inner-card">
         <label><strong>📝 Observaciones / Novedades:</strong></label>
-        <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Se rompió 1 jarra de vidrio. Faltó agregar salsas al pedido..."></textarea>
+        <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Se rompió 1 jarra de vidrio..."></textarea>
       </div>
 
       <button class="btn-primary" onclick="generarReporteCocina()">Enviar Inventario y Pedido por WhatsApp</button>
@@ -260,11 +418,14 @@
     <div class="nav-item active" onclick="navegarBarra('hub')">
       <span>🏠</span> Hub
     </div>
-    <div class="nav-item" onclick="navegarBarra('bebidas')">
-      <span>🥤</span> Bebidas
+    <div class="nav-item" onclick="navegarBarra('almacen')">
+      <span>📦</span> Almacén
     </div>
-    <div class="nav-item" onclick="navegarBarra('cocina')">
-      <span>🥬</span> Cocina
+    <div class="nav-item" onclick="navegarBarra('desempeno')">
+      <span>📈</span> Métricas
+    </div>
+    <div class="nav-item" onclick="navegarBarra('finanzas')">
+      <span>💵</span> Finanzas
     </div>
   </nav>
 
