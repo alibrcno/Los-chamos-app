@@ -6,8 +6,14 @@ let db = {
     { usuario: 'cocina', pin: '2222', rol: 'cocina' }
   ],
   bebidas: JSON.parse(localStorage.getItem('chamos_bebidas')) || [
-    { id: 1, nombre: 'Cerveza Aguila', precio: 4000, stock: 24 },
-    { id: 2, nombre: 'Gatorade', precio: 5000, stock: 12 }
+    { id: 1, nombre: 'Cerveza Aguila', precio: 4000, stock: 24, sugerido: 48 },
+    { id: 2, nombre: 'Gatorade', precio: 5000, stock: 12, sugerido: 24 }
+  ],
+  insumosDesechables: JSON.parse(localStorage.getItem('chamos_insumos_desechables')) || [
+    { id: 1, nombre: 'Servilletas', unidad: 'Paquete', stock: 10, sugerido: 20 },
+    { id: 2, nombre: 'Tenedores', unidad: 'Paquete', stock: 5, sugerido: 10 },
+    { id: 3, nombre: 'Vasos 12oz', unidad: 'Paquete', stock: 8, sugerido: 15 },
+    { id: 4, nombre: 'Cuchillos', unidad: 'Paquete', stock: 4, sugerido: 10 }
   ],
   insumosCocina: JSON.parse(localStorage.getItem('chamos_insumos')) || [
     { id: 1, nombre: 'Jamón', cantidad: 500, unidad: 'gr', ideal: 1000 },
@@ -15,25 +21,31 @@ let db = {
   ],
   tareasCocina: JSON.parse(localStorage.getItem('chamos_tareas')) || [
     { id: 1, tarea: 'Hacer salsa de pizza' },
-    { id: 2, tarea: 'Hacer guiso de caraota' },
-    { id: 3, tarea: 'Hacer pollo guisado' }
+    { id: 2, tarea: 'Hacer guiso de caraota' }
   ],
   almacen: JSON.parse(localStorage.getItem('chamos_almacen')) || [
     { id: 1, nombre: 'Bulto de Harina (25kg)', unidad: 'Bulto', stock: 5 },
     { id: 2, nombre: 'Paca de Maltas', unidad: 'Paca', stock: 10 }
   ],
   movimientos: JSON.parse(localStorage.getItem('chamos_movimientos')) || [],
+  
+  // Estado Temporal del Turno
   gastosTurnoActual: [],
   entradasBebidasTurno: {},
-  inventarioInicialTurno: {},
+  aperturaDatos: {
+    bebidas: {},
+    insumos: {},
+    bases: { Efectivo: 0, Nequi: 0, Bancolombia: 0, Datáfono: 0 }
+  },
   usuarioActual: null
 };
 
-const NUMERO_WHATSAPP = "573218382315";
+const NUMERO_WHATSAPP_ADMIN = "573218382315";
 
 function guardarBD() {
   localStorage.setItem('chamos_usuarios', JSON.stringify(db.usuarios));
   localStorage.setItem('chamos_bebidas', JSON.stringify(db.bebidas));
+  localStorage.setItem('chamos_insumos_desechables', JSON.stringify(db.insumosDesechables));
   localStorage.setItem('chamos_insumos', JSON.stringify(db.insumosCocina));
   localStorage.setItem('chamos_tareas', JSON.stringify(db.tareasCocina));
   localStorage.setItem('chamos_almacen', JSON.stringify(db.almacen));
@@ -59,7 +71,7 @@ function iniciarSesion(e) {
       cargarAdminHub();
     } else if (usuario.rol === 'encargada') {
       document.getElementById('sec-encargada').classList.remove('hidden');
-      cargarAperturaEncargada();
+      iniciarAperturaEncargada();
     } else if (usuario.rol === 'cocina') {
       document.getElementById('sec-cocina').classList.remove('hidden');
       cargarModuloCocina();
@@ -81,13 +93,14 @@ function cerrarSesion() {
 
 // --- MÓDULO ADMIN HUB ---
 function cargarAdminHub() {
-  let saldos = { Bancolombia: 0, Nequi: 0, Efectivo: 0 };
+  let saldos = { Bancolombia: 0, Nequi: 0, Efectivo: 0, Datáfono: 0 };
 
   db.movimientos.forEach(m => {
     if (m.ingresos) {
       saldos.Bancolombia += m.ingresos.Bancolombia || 0;
       saldos.Nequi += m.ingresos.Nequi || 0;
       saldos.Efectivo += m.ingresos.Efectivo || 0;
+      saldos.Datáfono += m.ingresos.Datáfono || 0;
     }
     if (m.gastos) {
       m.gastos.forEach(g => {
@@ -99,10 +112,11 @@ function cargarAdminHub() {
   document.getElementById('saldo-bancolombia').innerText = `$${saldos.Bancolombia.toLocaleString()}`;
   document.getElementById('saldo-nequi').innerText = `$${saldos.Nequi.toLocaleString()}`;
   document.getElementById('saldo-efectivo').innerText = `$${saldos.Efectivo.toLocaleString()}`;
+  document.getElementById('saldo-datafono').innerText = `$${saldos.Datáfono.toLocaleString()}`;
 }
 
 function verSubModuloAdmin(modulo) {
-  const modulos = ['hub', 'almacen', 'finanzas', 'desempeno', 'bebidas', 'cocina', 'checklist', 'usuarios'];
+  const modulos = ['hub', 'almacen', 'finanzas', 'desempeno', 'bebidas', 'insumos', 'checklist', 'usuarios'];
   modulos.forEach(m => {
     const el = document.getElementById(`admin-view-${m}`);
     if (el) el.classList.add('hidden');
@@ -114,7 +128,7 @@ function verSubModuloAdmin(modulo) {
   else if (modulo === 'finanzas') renderFinanzasAdmin();
   else if (modulo === 'desempeno') renderDesempenoAdmin();
   else if (modulo === 'bebidas') renderListaBebidasAdmin();
-  else if (modulo === 'cocina') renderListaCocinaAdmin();
+  else if (modulo === 'insumos') renderListaInsumosAdmin();
   else if (modulo === 'checklist') renderListaChecklistAdmin();
   else if (modulo === 'usuarios') renderListaUsuariosAdmin();
 }
@@ -128,7 +142,7 @@ function navegarBarra(vista) {
   verSubModuloAdmin(vista);
 }
 
-// --- SUBMÓDULO: ALMACÉN CENTRAL ---
+// --- SUBMÓDULOS ADMIN ---
 function renderAlmacenAdmin() {
   const select = document.getElementById('almacen-item-select');
   select.innerHTML = db.almacen.map(i => `<option value="${i.id}">${i.nombre} (${i.stock} ${i.unidad})</option>`).join('');
@@ -136,10 +150,7 @@ function renderAlmacenAdmin() {
   const cont = document.getElementById('admin-lista-almacen');
   cont.innerHTML = db.almacen.map(i => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <strong>${i.nombre}</strong><br>
-        <small style="color:#64748b;">Disponible en Bodega: <strong>${i.stock} ${i.unidad}</strong></small>
-      </div>
+      <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock Bodega: <strong>${i.stock} ${i.unidad}</strong></small></div>
       <button class="btn-secondary" onclick="eliminarItemAlmacen(${i.id})">🗑️</button>
     </div>
   `).join('');
@@ -153,16 +164,10 @@ function registrarMovimientoAlmacen(e) {
 
   const item = db.almacen.find(i => i.id === itemId);
   if (item) {
-    if (tipo === 'entrada') {
-      item.stock += cant;
-      alert(`✅ Se sumaron ${cant} ${item.unidad} a ${item.nombre}`);
-    } else {
-      if (cant > item.stock) {
-        alert(`⚠️ No hay suficiente stock en bodega (Disponible: ${item.stock})`);
-        return;
-      }
+    if (tipo === 'entrada') item.stock += cant;
+    else {
+      if (cant > item.stock) { alert(`⚠️ Stock insuficiente en bodega`); return; }
       item.stock -= cant;
-      alert(`📤 Se trasladaron ${cant} ${item.unidad} de ${item.nombre}`);
     }
     guardarBD();
     renderAlmacenAdmin();
@@ -188,26 +193,18 @@ function eliminarItemAlmacen(id) {
   renderAlmacenAdmin();
 }
 
-// --- SUBMÓDULO: FINANZAS ADMIN ---
 function renderFinanzasAdmin() {
   const cont = document.getElementById('lista-movimientos-diarios-finanzas');
-  if (db.movimientos.length === 0) {
-    cont.innerHTML = `<p style="font-size:0.8rem; color:#94a3b8;">Sin movimientos registrados.</p>`;
-  } else {
-    cont.innerHTML = db.movimientos.map(m => {
-      const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0);
-      const totGastos = (m.gastos || []).reduce((acc, g) => acc + g.valor, 0);
-      return `
-        <div class="daily-row">
-          <div><strong>${m.fecha}</strong></div>
-          <div>
-            <span class="txt-green">Ing: $${totIngresos.toLocaleString()}</span> | 
-            <span class="txt-red">Gas: $${totGastos.toLocaleString()}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+  cont.innerHTML = db.movimientos.map(m => {
+    const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0) + (m.ingresos.Datáfono || 0);
+    const totGastos = (m.gastos || []).reduce((acc, g) => acc + g.valor, 0);
+    return `
+      <div class="daily-row">
+        <div><strong>${m.fecha}</strong></div>
+        <div><span class="txt-green">Ing: $${totIngresos.toLocaleString()}</span> | <span class="txt-red">Gas: $${totGastos.toLocaleString()}</span></div>
+      </div>
+    `;
+  }).join('');
 }
 
 function registrarMovimientoAdmin(e) {
@@ -226,101 +223,71 @@ function registrarMovimientoAdmin(e) {
       fechaRaw: hoyFecha,
       isoDate: new Date().toISOString().substring(0, 7),
       diaSemanaIndex: new Date().getDay(),
-      ingresos: { Efectivo: 0, Nequi: 0, Bancolombia: 0 },
+      ingresos: { Efectivo: 0, Nequi: 0, Bancolombia: 0, Datáfono: 0 },
       gastos: []
     };
     db.movimientos.push(movHoy);
   }
 
-  if (tipo === 'ingreso') {
-    movHoy.ingresos[cuenta] = (movHoy.ingresos[cuenta] || 0) + valor;
-  } else {
-    movHoy.gastos.push({ concepto: `[ADMIN] ${concepto}`, valor, cuenta });
-  }
+  if (tipo === 'ingreso') movHoy.ingresos[cuenta] = (movHoy.ingresos[cuenta] || 0) + valor;
+  else movHoy.gastos.push({ concepto: `[ADMIN] ${concepto}`, valor, cuenta });
 
   guardarBD();
   renderFinanzasAdmin();
   cargarAdminHub();
-  alert("✅ Movimiento financiero guardado con éxito.");
+  alert("✅ Registrado");
   e.target.reset();
 }
 
-// --- SUBMÓDULO: DESEMPEÑO Y MÉTRICAS MENSUALES ---
 function renderDesempenoAdmin() {
   const mesInput = document.getElementById('desempeno-mes-select');
-  if (!mesInput.value) {
-    mesInput.value = new Date().toISOString().substring(0, 7);
-  }
+  if (!mesInput.value) mesInput.value = new Date().toISOString().substring(0, 7);
   renderRendimientoMensual();
 }
 
 function renderRendimientoMensual() {
   const mesSel = document.getElementById('desempeno-mes-select').value;
-  
-  const movsMes = db.movimientos.filter(m => {
-    return m.isoDate === mesSel || (m.fechaRaw && m.fechaRaw.includes(mesSel));
-  });
+  const movsMes = db.movimientos.filter(m => m.isoDate === mesSel || (m.fechaRaw && m.fechaRaw.includes(mesSel)));
 
-  let totVentas = 0;
-  let totGastos = 0;
-  
+  let totVentas = 0, totGastos = 0;
   const nombresDias = { 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo', 1: 'Lunes' };
-  let acumuladoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 };
-  let conteoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 };
+  let acumuladoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 }, conteoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 };
 
   movsMes.forEach(m => {
-    const ing = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0);
+    const ing = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0) + (m.ingresos.Datáfono || 0);
     const gas = (m.gastos || []).reduce((acc, g) => acc + g.valor, 0);
-
-    totVentas += ing;
-    totGastos += gas;
+    totVentas += ing; totGastos += gas;
 
     const idx = m.diaSemanaIndex !== undefined ? m.diaSemanaIndex : 0;
-    if (acumuladoDias[idx] !== undefined) {
-      acumuladoDias[idx] += ing;
-      conteoDias[idx] += 1;
-    }
+    if (acumuladoDias[idx] !== undefined) { acumuladoDias[idx] += ing; conteoDias[idx] += 1; }
   });
 
-  const utilidad = totVentas - totGastos;
-
-  document.getElementById('resumen-mes-utilidad').innerText = `$${utilidad.toLocaleString()}`;
+  document.getElementById('resumen-mes-utilidad').innerText = `$${(totVentas - totGastos).toLocaleString()}`;
   document.getElementById('resumen-mes-ventas').innerText = `$${totVentas.toLocaleString()}`;
   document.getElementById('resumen-mes-gastos').innerText = `$${totGastos.toLocaleString()}`;
 
-  let maxPromedio = 1;
+  let maxProm = 1;
   const promedios = {};
-  
   [3, 4, 5, 6, 0, 1].forEach(d => {
-    const prom = conteoDias[d] > 0 ? acumuladoDias[d] / conteoDias[d] : 0;
-    promedios[d] = prom;
-    if (prom > maxPromedio) maxPromedio = prom;
+    promedios[d] = conteoDias[d] > 0 ? acumuladoDias[d] / conteoDias[d] : 0;
+    if (promedios[d] > maxProm) maxProm = promedios[d];
   });
 
-  const contGrafica = document.getElementById('desempeno-grafica-dias');
-  contGrafica.innerHTML = [3, 4, 5, 6, 0, 1].map(d => {
-    const prom = promedios[d];
-    const pct = Math.round((prom / maxPromedio) * 100);
-    return `
-      <div style="margin-bottom: 12px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-          <strong>${nombresDias[d]}</strong>
-          <span style="color:#ea580c; font-weight:bold;">$${Math.round(prom).toLocaleString()} / día</span>
-        </div>
-        <div class="bar-container">
-          <div class="bar-fill" style="width: ${pct}%;"></div>
-        </div>
+  document.getElementById('desempeno-grafica-dias').innerHTML = [3, 4, 5, 6, 0, 1].map(d => `
+    <div style="margin-bottom: 12px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <strong>${nombresDias[d]}</strong>
+        <span style="color:#ea580c; font-weight:bold;">$${Math.round(promedios[d]).toLocaleString()} / día</span>
       </div>
-    `;
-  }).join('');
+      <div class="bar-container"><div class="bar-fill" style="width: ${Math.round((promedios[d] / maxProm) * 100)}%;"></div></div>
+    </div>
+  `).join('');
 }
 
-// Config Bebidas, Cocina, Checklist y Usuarios
 function renderListaBebidasAdmin() {
-  const cont = document.getElementById('admin-lista-bebidas');
-  cont.innerHTML = db.bebidas.map(b => `
+  document.getElementById('admin-lista-bebidas').innerHTML = db.bebidas.map(b => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${b.nombre}</strong><br><small style="color:#64748b;">Precio: $${b.precio.toLocaleString()} | Stock: ${b.stock} unds</small></div>
+      <div><strong>${b.nombre}</strong><br><small style="color:#64748b;">$${b.precio.toLocaleString()} | Stock: ${b.stock} | Sugerido: ${b.sugerido}</small></div>
       <button class="btn-secondary" onclick="eliminarBebida(${b.id})">🗑️</button>
     </div>
   `).join('');
@@ -328,53 +295,49 @@ function renderListaBebidasAdmin() {
 
 function agregarNuevaBebida(e) {
   e.preventDefault();
-  const nombre = document.getElementById('nueva-bebida-nombre').value;
-  const precio = parseFloat(document.getElementById('nueva-bebida-precio').value) || 0;
-  const stock = parseInt(document.getElementById('nueva-bebida-stock').value) || 0;
-
-  db.bebidas.push({ id: Date.now(), nombre, precio, stock });
-  guardarBD();
-  renderListaBebidasAdmin();
-  e.target.reset();
+  db.bebidas.push({
+    id: Date.now(),
+    nombre: document.getElementById('nueva-bebida-nombre').value,
+    precio: parseFloat(document.getElementById('nueva-bebida-precio').value) || 0,
+    stock: parseInt(document.getElementById('nueva-bebida-stock').value) || 0,
+    sugerido: parseInt(document.getElementById('nueva-bebida-sugerido').value) || 0
+  });
+  guardarBD(); renderListaBebidasAdmin(); e.target.reset();
 }
 
 function eliminarBebida(id) {
   db.bebidas = db.bebidas.filter(b => b.id !== id);
-  guardarBD();
-  renderListaBebidasAdmin();
+  guardarBD(); renderListaBebidasAdmin();
 }
 
-function renderListaCocinaAdmin() {
-  const cont = document.getElementById('admin-lista-cocina');
-  cont.innerHTML = db.insumosCocina.map(i => `
+function renderListaInsumosAdmin() {
+  document.getElementById('admin-lista-insumos').innerHTML = db.insumosDesechables.map(i => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock Ideal: ${i.ideal} ${i.unidad}</small></div>
-      <button class="btn-secondary" onclick="eliminarInsumo(${i.id})">🗑️</button>
+      <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock: ${i.stock} ${i.unidad} | Sugerido: ${i.sugerido} ${i.unidad}</small></div>
+      <button class="btn-secondary" onclick="eliminarInsumoDesechable(${i.id})">🗑️</button>
     </div>
   `).join('');
 }
 
-function agregarNuevoInsumo(e) {
+function agregarNuevoInsumoDesechable(e) {
   e.preventDefault();
-  const nombre = document.getElementById('nuevo-insumo-nombre').value;
-  const unidad = document.getElementById('nuevo-insumo-unidad').value;
-  const ideal = parseFloat(document.getElementById('nuevo-insumo-ideal').value) || 0;
-
-  db.insumosCocina.push({ id: Date.now(), nombre, cantidad: 0, unidad, ideal });
-  guardarBD();
-  renderListaCocinaAdmin();
-  e.target.reset();
+  db.insumosDesechables.push({
+    id: Date.now(),
+    nombre: document.getElementById('nuevo-insumo-desechable-nombre').value,
+    unidad: document.getElementById('nuevo-insumo-desechable-unidad').value,
+    stock: parseInt(document.getElementById('nuevo-insumo-desechable-stock').value) || 0,
+    sugerido: parseInt(document.getElementById('nuevo-insumo-desechable-sugerido').value) || 0
+  });
+  guardarBD(); renderListaInsumosAdmin(); e.target.reset();
 }
 
-function eliminarInsumo(id) {
-  db.insumosCocina = db.insumosCocina.filter(i => i.id !== id);
-  guardarBD();
-  renderListaCocinaAdmin();
+function eliminarInsumoDesechable(id) {
+  db.insumosDesechables = db.insumosDesechables.filter(i => i.id !== id);
+  guardarBD(); renderListaInsumosAdmin();
 }
 
 function renderListaChecklistAdmin() {
-  const cont = document.getElementById('admin-lista-checklist');
-  cont.innerHTML = db.tareasCocina.map(t => `
+  document.getElementById('admin-lista-checklist').innerHTML = db.tareasCocina.map(t => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
       <div><strong>${t.tarea}</strong></div>
       <button class="btn-secondary" onclick="eliminarTarea(${t.id})">🗑️</button>
@@ -384,25 +347,19 @@ function renderListaChecklistAdmin() {
 
 function agregarNuevaTarea(e) {
   e.preventDefault();
-  const tarea = document.getElementById('nueva-tarea-nombre').value.trim();
-
-  db.tareasCocina.push({ id: Date.now(), tarea });
-  guardarBD();
-  renderListaChecklistAdmin();
-  e.target.reset();
+  db.tareasCocina.push({ id: Date.now(), tarea: document.getElementById('nueva-tarea-nombre').value.trim() });
+  guardarBD(); renderListaChecklistAdmin(); e.target.reset();
 }
 
 function eliminarTarea(id) {
   db.tareasCocina = db.tareasCocina.filter(t => t.id !== id);
-  guardarBD();
-  renderListaChecklistAdmin();
+  guardarBD(); renderListaChecklistAdmin();
 }
 
 function renderListaUsuariosAdmin() {
-  const cont = document.getElementById('admin-lista-usuarios');
-  cont.innerHTML = db.usuarios.map((u, index) => `
+  document.getElementById('admin-lista-usuarios').innerHTML = db.usuarios.map((u, index) => `
     <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${u.usuario}</strong> (${u.rol})<br><small style="color:#64748b;">PIN: ${u.pin}</small></div>
+      <div><strong>${u.usuario}</strong> (${u.rol}) | PIN: ${u.pin}</div>
       ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
     </div>
   `).join('');
@@ -410,63 +367,106 @@ function renderListaUsuariosAdmin() {
 
 function agregarNuevoUsuario(e) {
   e.preventDefault();
-  const usuario = document.getElementById('nuevo-user-nombre').value.trim();
-  const pin = document.getElementById('nuevo-user-pin').value.trim();
-  const rol = document.getElementById('nuevo-user-rol').value;
-
-  db.usuarios.push({ usuario, pin, rol });
-  guardarBD();
-  renderListaUsuariosAdmin();
-  e.target.reset();
+  db.usuarios.push({
+    usuario: document.getElementById('nuevo-user-nombre').value.trim(),
+    pin: document.getElementById('nuevo-user-pin').value.trim(),
+    rol: document.getElementById('nuevo-user-rol').value
+  });
+  guardarBD(); renderListaUsuariosAdmin(); e.target.reset();
 }
 
 function eliminarUsuario(index) {
   db.usuarios.splice(index, 1);
-  guardarBD();
-  renderListaUsuariosAdmin();
+  guardarBD(); renderListaUsuariosAdmin();
 }
 
-// --- MÓDULO ENCARGADA MEJORADO ---
-function cargarAperturaEncargada() {
-  document.getElementById('encargada-step-apertura').classList.remove('hidden');
+// --- MÓDULO ENCARGADA (NUEVO FLUJO CON ALERTA AL ADMIN) ---
+function iniciarAperturaEncargada() {
+  document.getElementById('encargada-apertura-paso1').classList.remove('hidden');
+  document.getElementById('encargada-apertura-paso2').classList.add('hidden');
+  document.getElementById('encargada-apertura-paso3').classList.add('hidden');
   document.getElementById('encargada-step-operacion').classList.add('hidden');
-  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
-  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
 
-  const cont = document.getElementById('lista-apertura-bebidas');
-  cont.innerHTML = db.bebidas.map(b => `
+  document.getElementById('lista-apertura-bebidas').innerHTML = db.bebidas.map(b => `
     <div class="form-group">
-      <label>${b.nombre} (Debe haber: ${b.stock}):</label>
+      <label>${b.nombre} (Stock actual: ${b.stock}):</label>
       <input type="number" id="apertura-bebida-${b.id}" value="${b.stock}">
     </div>
   `).join('');
 }
 
-function validarYGuardarApertura() {
-  let descuadres = [];
-  db.inventarioInicialTurno = {};
-
+function irAAperturaInsumosPaso2() {
   db.bebidas.forEach(b => {
-    const cantInicial = parseInt(document.getElementById(`apertura-bebida-${b.id}`).value) || 0;
-    db.inventarioInicialTurno[b.id] = cantInicial;
-
-    if (cantInicial !== b.stock) {
-      descuadres.push(`${b.nombre}: Sistema tenía ${b.stock}, pero física es ${cantInicial}`);
-    }
+    db.aperturaDatos.bebidas[b.id] = parseInt(document.getElementById(`apertura-bebida-${b.id}`).value) || 0;
   });
 
-  if (descuadres.length > 0) {
-    alert("⚠️ Se registraron los siguientes descuadres al iniciar:\n" + descuadres.join('\n'));
-  }
+  document.getElementById('encargada-apertura-paso1').classList.add('hidden');
+  document.getElementById('encargada-apertura-paso2').classList.remove('hidden');
 
-  const select = document.getElementById('entrada-bebida-id');
-  select.innerHTML = db.bebidas.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
+  document.getElementById('lista-apertura-insumos').innerHTML = db.insumosDesechables.map(i => `
+    <div class="form-group">
+      <label>${i.nombre} (${i.unidad}) - Stock actual: ${i.stock}:</label>
+      <input type="number" id="apertura-insumo-${i.id}" value="${i.stock}">
+    </div>
+  `).join('');
+}
 
+function volverAAperturaBebidasPaso1() {
+  document.getElementById('encargada-apertura-paso2').classList.add('hidden');
+  document.getElementById('encargada-apertura-paso1').classList.remove('hidden');
+}
+
+function irAAperturaSaldosPaso3() {
+  db.insumosDesechables.forEach(i => {
+    db.aperturaDatos.insumos[i.id] = parseInt(document.getElementById(`apertura-insumo-${i.id}`).value) || 0;
+  });
+
+  document.getElementById('encargada-apertura-paso2').classList.add('hidden');
+  document.getElementById('encargada-apertura-paso3').classList.remove('hidden');
+}
+
+function volverAAperturaInsumosPaso2() {
+  document.getElementById('encargada-apertura-paso3').classList.add('hidden');
+  document.getElementById('encargada-apertura-paso2').classList.remove('hidden');
+}
+
+function finalizarAperturaYNotificarAdmin() {
+  const efec = parseFloat(document.getElementById('apertura-base-efectivo').value) || 0;
+  const neq = parseFloat(document.getElementById('apertura-base-nequi').value) || 0;
+  const ban = parseFloat(document.getElementById('apertura-base-bancolombia').value) || 0;
+  const dat = parseFloat(document.getElementById('apertura-base-datafono').value) || 0;
+
+  db.aperturaDatos.bases = { Efectivo: efec, Nequi: neq, Bancolombia: ban, Datáfono: dat };
   db.gastosTurnoActual = [];
   db.entradasBebidasTurno = {};
 
-  document.getElementById('encargada-step-apertura').classList.add('hidden');
+  // Notificación de Apertura por WhatsApp al Administrador
+  let msg = `*🔔 ALERTA DE APERTURA DE TURNO - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
+  msg += `*💵 BASES Y SALDOS INICIALES:*\n`;
+  msg += `- Efectivo en Caja: $${efec.toLocaleString()}\n`;
+  msg += `- Nequi: $${neq.toLocaleString()}\n`;
+  msg += `- Bancolombia: $${ban.toLocaleString()}\n`;
+  msg += `- Datáfono: $${dat.toLocaleString()}\n\n`;
+
+  msg += `*🥤 INVENTARIO INICIAL BEBIDAS:*\n`;
+  db.bebidas.forEach(b => {
+    msg += `• ${b.nombre}: ${db.aperturaDatos.bebidas[b.id] || 0} unds\n`;
+  });
+
+  msg += `\n*🍽️ INVENTARIO INICIAL INSUMOS:*\n`;
+  db.insumosDesechables.forEach(i => {
+    msg += `• ${i.nombre}: ${db.aperturaDatos.insumos[i.id] || 0} ${i.unidad}\n`;
+  });
+
+  alert("✅ Apertura registrada con éxito. Se enviará la notificación al Administrador.");
+  
+  const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  // Transición a la vista operativa
+  document.getElementById('encargada-apertura-paso3').classList.add('hidden');
   document.getElementById('encargada-step-operacion').classList.remove('hidden');
+  renderFormularioEntradaMasivaBebidas();
 }
 
 function cambiarSubTabEncargada(tab) {
@@ -484,6 +484,32 @@ function cambiarSubTabEncargada(tab) {
   }
 }
 
+function renderFormularioEntradaMasivaBebidas() {
+  const cont = document.getElementById('contenedor-entradas-masivas-bebidas');
+  cont.innerHTML = db.bebidas.map(b => `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-size:0.85rem; font-weight:600;">${b.nombre}</span>
+      <input type="number" id="entrada-masiva-bebida-${b.id}" placeholder="+0" style="width:90px; text-align:center;">
+    </div>
+  `).join('');
+}
+
+function guardarEntradasMasivasBebidas() {
+  let cargadas = 0;
+  db.bebidas.forEach(b => {
+    const cant = parseInt(document.getElementById(`entrada-masiva-bebida-${b.id}`).value) || 0;
+    if (cant > 0) {
+      if (!db.entradasBebidasTurno[b.id]) db.entradasBebidasTurno[b.id] = 0;
+      db.entradasBebidasTurno[b.id] += cant;
+      cargadas++;
+      document.getElementById(`entrada-masiva-bebida-${b.id}`).value = '';
+    }
+  });
+
+  if (cargadas > 0) alert("✅ Se agregaron las bebidas al inventario del turno.");
+  else alert("ℹ️ No ingresaste cantidades.");
+}
+
 function registrarGasto(e) {
   e.preventDefault();
   const concepto = document.getElementById('gasto-concepto').value;
@@ -495,33 +521,17 @@ function registrarGasto(e) {
   e.target.reset();
 }
 
-function registrarEntradaBebida(e) {
-  e.preventDefault();
-  const bId = document.getElementById('entrada-bebida-id').value;
-  const cant = parseInt(document.getElementById('entrada-bebida-cant').value) || 0;
-
-  if (!db.entradasBebidasTurno[bId]) db.entradasBebidasTurno[bId] = 0;
-  db.entradasBebidasTurno[bId] += cant;
-
-  alert(`✅ Registrada entrada de +${cant} unidades`);
-  e.target.reset();
-}
-
-// Paso 1 Cierre: Inventario
-function irACierreInventarioPaso1() {
+// PASO 1 CIERRE: BEBIDAS
+function irACierrePaso1Bebidas() {
   document.getElementById('encargada-step-operacion').classList.add('hidden');
   document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
-  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
 
-  const cont = document.getElementById('lista-cierre-bebidas');
-  cont.innerHTML = db.bebidas.map(b => {
-    const inicial = db.inventarioInicialTurno[b.id] || 0;
-    const entradas = db.entradasBebidasTurno[b.id] || 0;
-    const totalEsperadoSinVentas = inicial + entradas;
-
+  document.getElementById('lista-cierre-bebidas').innerHTML = db.bebidas.map(b => {
+    const ini = db.aperturaDatos.bebidas[b.id] || 0;
+    const ent = db.entradasBebidasTurno[b.id] || 0;
     return `
       <div class="form-group">
-        <label>${b.nombre} (Inicial: ${inicial} + Compras: ${entradas} = Total: ${totalEsperadoSinVentas}):</label>
+        <label>${b.nombre} (Inicial: ${ini} + Entradas: ${ent} = ${ini + ent}):</label>
         <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final física">
       </div>
     `;
@@ -533,164 +543,176 @@ function volverAOperacion() {
   document.getElementById('encargada-step-operacion').classList.remove('hidden');
 }
 
-// Paso 2 Cierre: Dinero
-function irACierreDineroPaso2() {
+// PASO 2 CIERRE: INSUMOS
+function irACierrePaso2Insumos() {
   document.getElementById('encargada-cierre-paso1').classList.add('hidden');
   document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
+
+  document.getElementById('lista-cierre-insumos').innerHTML = db.insumosDesechables.map(i => `
+    <div class="form-group">
+      <label>${i.nombre} (${i.unidad}):</label>
+      <input type="number" id="cierre-insumo-${i.id}" placeholder="Cantidad final física">
+    </div>
+  `).join('');
 }
 
-function volverACierreInventarioPaso1() {
+function volverACierrePaso1Bebidas() {
   document.getElementById('encargada-cierre-paso2').classList.add('hidden');
   document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
 }
 
-function generarReporteCierre() {
-  const efec = parseFloat(document.getElementById('cierre-efectivo').value) || 0;
-  const neq = parseFloat(document.getElementById('cierre-nequi').value) || 0;
-  const ban = parseFloat(document.getElementById('cierre-bancolombia').value) || 0;
-  const totalReportadoDinero = efec + neq + ban;
+// PASO 3 CIERRE: SALDOS
+function irACierrePaso3Saldos() {
+  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso3').classList.remove('hidden');
+}
 
-  let dineroVentaBebidas = 0;
-  let resumenBebidasMsg = "";
+function volverACierrePaso2Insumos() {
+  document.getElementById('encargada-cierre-paso3').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
+}
+
+// REPORTE FINAL DE CIERRE Y AUDITORÍA COMPLETA
+function generarReporteCierreCompleto() {
+  const efecFinal = parseFloat(document.getElementById('cierre-final-efectivo').value) || 0;
+  const neqFinal = parseFloat(document.getElementById('cierre-final-nequi').value) || 0;
+  const banFinal = parseFloat(document.getElementById('cierre-final-bancolombia').value) || 0;
+  const datFinal = parseFloat(document.getElementById('cierre-final-datafono').value) || 0;
+
+  let ventaEstimadaBebidas = 0;
+  let resumenBebidas = "";
+  let comprasSugeridasBebidas = [];
 
   db.bebidas.forEach(b => {
-    const inicial = db.inventarioInicialTurno[b.id] || 0;
-    const entradas = db.entradasBebidasTurno[b.id] || 0;
-    const finalFisico = parseInt(document.getElementById(`cierre-bebida-${b.id}`).value) || 0;
+    const ini = db.aperturaDatos.bebidas[b.id] || 0;
+    const ent = db.entradasBebidasTurno[b.id] || 0;
+    const fin = parseInt(document.getElementById(`cierre-bebida-${b.id}`).value) || 0;
+    const vendidas = (ini + ent) - fin;
+    const totVenta = vendidas * b.precio;
+    ventaEstimadaBebidas += totVenta;
 
-    const vendidas = (inicial + entradas) - finalFisico;
-    const totalVentaBebida = vendidas * b.precio;
-    dineroVentaBebidas += totalVentaBebida;
+    resumenBebidas += `• ${b.nombre}: Quedan ${fin} (Vendidas: ${vendidas} = $${totVenta.toLocaleString()})\n`;
+    
+    // Actualizar stock local
+    b.stock = fin;
 
-    resumenBebidasMsg += `• ${b.nombre}: Quedan ${finalFisico} (Vendidas: ${vendidas} = $${totalVentaBebida.toLocaleString()})\n`;
-
-    b.stock = finalFisico;
+    if (fin < b.sugerido) {
+      comprasSugeridasBebidas.push(`• Comprar ${b.sugerido - fin} unds de ${b.nombre}`);
+    }
   });
 
-  const totalGastos = db.gastosTurnoActual.reduce((acc, g) => acc + g.valor, 0);
-  const dineroEsperadoCaja = dineroVentaBebidas - totalGastos;
-  const diferenciaDineraria = totalReportadoDinero - dineroEsperadoCaja;
+  let resumenInsumos = "";
+  let comprasSugeridasInsumos = [];
 
-  let estadoCajaMsg = "";
-  if (diferenciaDineraria === 0) {
-    estadoCajaMsg = "✅ CAJA CUADRADA EXACTA";
-  } else if (diferenciaDineraria > 0) {
-    estadoCajaMsg = `🟢 SOBRANTE EN CAJA: +$${diferenciaDineraria.toLocaleString()}`;
-  } else {
-    estadoCajaMsg = `🔴 DESCUADRE / FALTANTE: -$${Math.abs(diferenciaDineraria).toLocaleString()}`;
-  }
+  db.insumosDesechables.forEach(i => {
+    const fin = parseInt(document.getElementById(`cierre-insumo-${i.id}`).value) || 0;
+    resumenInsumos += `• ${i.nombre}: ${fin} ${i.unidad}\n`;
+    i.stock = fin;
+
+    if (fin < i.sugerido) {
+      comprasSugeridasInsumos.push(`• Comprar ${i.sugerido - fin} ${i.unidad} de ${i.nombre}`);
+    }
+  });
+
+  // Cálculo del Ingreso Total en Caja
+  const totalIngresoEfectivo = efecFinal - db.aperturaDatos.bases.Efectivo;
+  const totalIngresoNequi = neqFinal - db.aperturaDatos.bases.Nequi;
+  const totalIngresoBancolombia = banFinal - db.aperturaDatos.bases.Bancolombia;
+  const totalIngresoDatáfono = datFinal - db.aperturaDatos.bases.Datáfono;
+
+  const totalIngresoBrutoGeneral = totalIngresoEfectivo + totalIngresoNequi + totalIngresoBancolombia + totalIngresoDatáfono;
+  const totalGastos = db.gastosTurnoActual.reduce((acc, g) => acc + g.valor, 0);
 
   const observaciones = document.getElementById('encargada-observaciones').value.trim();
 
+  // Guardar Movimiento en BD
   const fechaActual = new Date();
   const hoyFecha = fechaActual.toLocaleDateString();
-  const isoMes = fechaActual.toISOString().substring(0, 7);
 
   db.movimientos.push({
     fecha: `${fechaActual.toLocaleDateString('es-CO', { weekday: 'long' })} (${hoyFecha})`,
     fechaRaw: hoyFecha,
-    isoDate: isoMes,
+    isoDate: fechaActual.toISOString().substring(0, 7),
     diaSemanaIndex: fechaActual.getDay(),
-    ingresos: { Efectivo: efec, Nequi: neq, Bancolombia: ban },
+    ingresos: { Efectivo: totalIngresoEfectivo, Nequi: totalIngresoNequi, Bancolombia: totalIngresoBancolombia, Datáfono: totalIngresoDatáfono },
     gastos: [...db.gastosTurnoActual]
   });
 
   guardarBD();
 
-  let msg = `*📊 CIERRE Y AUDITORÍA - LOS CHAMOS*\n📅 ${hoyFecha}\n\n`;
-  msg += `*🥤 INVENTARIO Y VENTAS DE BEBIDAS:*\n${resumenBebidasMsg}\n`;
-  msg += `*💵 AUDITORÍA FINANCIERA:*\n`;
-  msg += `- Total Ventas Bebidas: $${dineroVentaBebidas.toLocaleString()}\n`;
-  msg += `- Total Gastos del Turno: -$${totalGastos.toLocaleString()}\n`;
-  msg += `- Dinero que DEBE HABER: $${dineroEsperadoCaja.toLocaleString()}\n`;
-  msg += `- Dinero REPORTADO: $${totalReportadoDinero.toLocaleString()}\n`;
-  msg += `  (Efectivo: $${efec.toLocaleString()} | Nequi: $${neq.toLocaleString()} | Bancolombia: $${ban.toLocaleString()})\n`;
-  msg += `👉 *ESTADO DE CAJA:* ${estadoCajaMsg}\n\n`;
+  // Armar Mensaje de WhatsApp
+  let msg = `*📊 CIERRE DE TURNO Y REPORTE OPERATIVO*\n📅 ${hoyFecha}\n\n`;
+  msg += `*💵 INGRESO NETO TOTAL DEL RESTAURANTE:*\n`;
+  msg += `- Ingreso Efectivo: $${totalIngresoEfectivo.toLocaleString()}\n`;
+  msg += `- Ingreso Nequi: $${totalIngresoNequi.toLocaleString()}\n`;
+  msg += `- Ingreso Bancolombia: $${totalIngresoBancolombia.toLocaleString()}\n`;
+  msg += `- Ingreso Datáfono: $${totalIngresoDatáfono.toLocaleString()}\n`;
+  msg += `👉 *INGRESO BRUTO TOTAL:* $${totalIngresoBrutoGeneral.toLocaleString()}\n`;
+  msg += `👉 *TOTAL GASTOS:* -$${totalGastos.toLocaleString()}\n\n`;
 
-  msg += `*💸 DETALLE GASTOS:*\n`;
-  if (db.gastosTurnoActual.length === 0) {
-    msg += `- Sin gastos registrados.\n`;
+  msg += `*🥤 REFERENCIA VENTA BEBIDAS:* $${ventaEstimadaBebidas.toLocaleString()}\n`;
+  msg += `${resumenBebidas}\n`;
+
+  msg += `*🍽️ INVENTARIO INSUMOS Y DOBLADOS:*\n${resumenInsumos}\n`;
+
+  msg += `*🛒 COMPRAS SUGERIDAS (REABASTECIMIENTO):*\n`;
+  const todasSugeridas = [...comprasSugeridasBebidas, ...comprasSugeridasInsumos];
+  if (todasSugeridas.length > 0) {
+    msg += todasSugeridas.join('\n') + `\n\n`;
   } else {
-    db.gastosTurnoActual.forEach(g => {
-      msg += `- ${g.concepto}: $${g.valor.toLocaleString()} (${g.cuenta})\n`;
-    });
+    msg += `✅ Stock de bebidas e insumos completo.\n\n`;
   }
 
   if (observaciones !== "") {
-    msg += `\n*📝 OBSERVACIONES / NOVEDADES:*\n${observaciones}\n`;
+    msg += `*📝 OBSERVACIONES / NOVEDADES:*\n${observaciones}\n`;
   }
 
-  const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
   cerrarSesion();
 }
 
 // --- MÓDULO COCINA ---
 function cargarModuloCocina() {
-  const contChecklist = document.getElementById('lista-checklist-cocina');
-  if (db.tareasCocina.length === 0) {
-    contChecklist.innerHTML = `<p style="font-size:0.8rem; color:#94a3b8;">No hay tareas programadas.</p>`;
-  } else {
-    contChecklist.innerHTML = db.tareasCocina.map(t => `
-      <label class="checkbox-item">
-        <input type="checkbox" id="tarea-check-${t.id}">
-        <span>${t.tarea}</span>
-      </label>
-    `).join('');
-  }
+  document.getElementById('lista-checklist-cocina').innerHTML = db.tareasCocina.map(t => `
+    <label class="checkbox-item"><input type="checkbox" id="tarea-check-${t.id}"><span>${t.tarea}</span></label>
+  `).join('');
 
-  const contInsumos = document.getElementById('lista-cocina');
-  contInsumos.innerHTML = db.insumosCocina.map(i => `
+  document.getElementById('lista-cocina').innerHTML = db.insumosCocina.map(i => `
     <div class="inner-card">
       <label><strong>${i.nombre}</strong> (Ideal: ${i.ideal} ${i.unidad})</label>
-      <input type="number" id="cocina-cant-${i.id}" value="${i.cantidad}" placeholder="Hay en cocina">
+      <input type="number" id="cocina-cant-${i.id}" value="${i.cantidad}">
     </div>
   `).join('');
 }
 
 function generarReporteCocina() {
-  let msg = `*🥬 INVENTARIO Y PREPARACIÓN COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
+  let msg = `*🥬 INVENTARIO COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
 
-  // SOLO incluir tareas seleccionadas (completadas)
-  let tareasCompletadas = [];
+  let tareas = [];
   db.tareasCocina.forEach(t => {
     const chk = document.getElementById(`tarea-check-${t.id}`);
-    if (chk && chk.checked) {
-      tareasCompletadas.push(`✅ ${t.tarea}`);
-    }
+    if (chk && chk.checked) tareas.push(`✅ ${t.tarea}`);
   });
 
-  if (tareasCompletadas.length > 0) {
-    msg += `*📋 PREPARACIONES REALIZADAS HOY:*\n` + tareasCompletadas.join('\n') + `\n\n`;
-  }
+  if (tareas.length > 0) msg += `*📋 PREPARACIONES REALIZADAS:*\n${tareas.join('\n')}\n\n`;
 
-  let disponibles = [];
-  let compras = [];
-
+  let dispon = [], compr = [];
   db.insumosCocina.forEach(i => {
-    const cantActual = parseFloat(document.getElementById(`cocina-cant-${i.id}`).value) || 0;
-    i.cantidad = cantActual;
-    
-    disponibles.push(`• ${i.nombre}: ${cantActual} ${i.unidad}`);
-
-    if (cantActual < i.ideal) {
-      const faltante = i.ideal - cantActual;
-      compras.push(`• Comprar ${faltante} ${i.unidad} de ${i.nombre}`);
-    }
+    const cant = parseFloat(document.getElementById(`cocina-cant-${i.id}`).value) || 0;
+    i.cantidad = cant;
+    dispon.push(`• ${i.nombre}: ${cant} ${i.unidad}`);
+    if (cant < i.ideal) compr.push(`• Comprar ${i.ideal - cant} ${i.unidad} de ${i.nombre}`);
   });
 
-  const observaciones = document.getElementById('cocina-observaciones').value.trim();
+  msg += `*📦 STOCK ACTUAL:*\n${dispon.join('\n')}\n\n`;
+  msg += `*🛒 COMPRAS SUGERIDAS COCINA:*\n${compr.length > 0 ? compr.join('\n') : '✅ Stock completo.'}\n\n`;
 
-  msg += `*📦 STOCK DISPONIBLE HOY:*\n` + disponibles.join('\n') + `\n\n`;
-  msg += `*🛒 COMPRAS SUGERIDAS:* \n` + (compras.length > 0 ? compras.join('\n') : '✅ Stock completo.') + `\n\n`;
-
-  if (observaciones !== "") {
-    msg += `*📝 OBSERVACIONES / NOVEDADES:*\n${observaciones}\n`;
-  }
+  const obs = document.getElementById('cocina-observaciones').value.trim();
+  if (obs !== "") msg += `*📝 OBSERVACIONES:*\n${obs}\n`;
 
   guardarBD();
-
-  const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
   cerrarSesion();
 }
