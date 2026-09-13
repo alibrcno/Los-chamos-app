@@ -40,8 +40,14 @@
     label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 4px; }
     input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; }
     input:focus, select:focus, textarea:focus { border-color: #ea580c; }
+    
     .btn-primary { width: 100%; padding: 12px; background-color: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-top: 10px; }
     .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+
+    /* Botones Pestaña Encargada */
+    .tab-btn-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 12px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 10px; font-weight: bold; font-size: 0.85rem; color: #475569; cursor: pointer; text-align: center; }
+    .tab-btn.active { background: #ea580c; color: white; border-color: #ea580c; }
 
     .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
     .txt-green { color: #16a34a; font-weight: 600; }
@@ -53,7 +59,7 @@
     .bar-container { background: #e2e8f0; border-radius: 6px; height: 12px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #ea580c; height: 100%; border-radius: 6px; }
 
-    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-around: space-around; padding: 8px 0; z-index: 100; }
     .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; text-decoration: none; cursor: pointer; }
     .nav-item.active { color: #ea580c; font-weight: bold; }
     .nav-item span { font-size: 1.2rem; }
@@ -315,7 +321,7 @@
       </div>
     </section>
 
-    <!-- MÓDULO ENCARGADA -->
+    <!-- MÓDULO ENCARGADA MEJORADO -->
     <section id="sec-encargada" class="hidden">
       <h3>📋 Módulo Encargada</h3>
 
@@ -327,27 +333,36 @@
         <button onclick="validarYGuardarApertura()" class="btn-primary">Verificar y Pasar a Turno</button>
       </div>
 
-      <!-- Paso 2: Operaciones -->
+      <!-- Paso 2: Operaciones con BOTONES LIMPIOS -->
       <div id="encargada-step-operacion" class="hidden">
-        <div class="inner-card">
+        
+        <!-- Pestañas de selección visual -->
+        <div class="tab-btn-container">
+          <button id="tab-gasto" class="tab-btn active" onclick="cambiarSubTabEncargada('gasto')">💸 Registrar Gasto</button>
+          <button id="tab-entrada" class="tab-btn" onclick="cambiarSubTabEncargada('entrada')">🥤 Entradas Bebidas</button>
+        </div>
+
+        <!-- Vista Registrar Gasto -->
+        <div id="subtab-view-gasto" class="inner-card">
           <h4>💸 Registrar Gasto del Turno</h4>
           <form onsubmit="registrarGasto(event)">
-            <div class="form-group"><label>Concepto:</label><input type="text" id="gasto-concepto" placeholder="Ej: Hielo / Limones" required></div>
+            <div class="form-group"><label>Concepto del Gasto:</label><input type="text" id="gasto-concepto" placeholder="Ej: Hielo / Limones / Servilletas" required></div>
             <div class="form-group"><label>Valor ($ COP):</label><input type="number" id="gasto-valor" placeholder="0" required></div>
             <div class="form-group">
-              <label>Cuenta de Pago:</label>
+              <label>Cuenta de donde se pagó:</label>
               <select id="gasto-cuenta">
-                <option value="Efectivo">Efectivo</option>
+                <option value="Efectivo">Efectivo de Caja</option>
                 <option value="Nequi">Nequi</option>
                 <option value="Bancolombia">Bancolombia</option>
               </select>
             </div>
-            <button type="submit" class="btn-primary" style="background-color:#0284c7;">Registrar Gasto</button>
+            <button type="submit" class="btn-primary" style="background-color:#dc2626;">Guardar Gasto</button>
           </form>
         </div>
 
-        <div class="inner-card">
-          <h4>🥤 Entrada de Bebidas (Reabastecimiento)</h4>
+        <!-- Vista Entrada de Bebidas -->
+        <div id="subtab-view-entrada" class="inner-card hidden">
+          <h4>🥤 Reabastecimiento de Bebidas</h4>
           <form onsubmit="registrarEntradaBebida(event)">
             <div class="form-group">
               <label>Seleccionar Bebida:</label>
@@ -358,24 +373,34 @@
           </form>
         </div>
 
-        <button onclick="irACierreTurno()" class="btn-primary" style="background-color:#ea580c; margin-top:15px;">Ir a Cierre de Turno →</button>
+        <button onclick="irACierreInventarioPaso1()" class="btn-primary" style="background-color:#ea580c; margin-top:15px;">Ir a Cierre de Turno →</button>
       </div>
 
-      <!-- Paso 3: Cierre -->
-      <div id="encargada-step-cierre" class="hidden">
+      <!-- Paso 3: Cierre PASO A PASO (1. Inventario -> 2. Dinero) -->
+      <!-- Cierre Paso 1: Inventario Bebidas -->
+      <div id="encargada-cierre-paso1" class="hidden">
         <button class="btn-secondary" onclick="volverAOperacion()" style="margin-bottom:10px;">← Volver a Operaciones</button>
         
         <div class="inner-card">
-          <h4>📊 Inventario Final de Bebidas</h4>
-          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa la cantidad física que queda en local:</p>
+          <div style="background:#ea580c; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-size:0.75rem; font-weight:bold; margin-bottom:8px;">PASO 1 DE 2</div>
+          <h4>📦 Inventario Final de Bebidas</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa la cantidad física exacta que queda en local al cerrar:</p>
           <div id="lista-cierre-bebidas"></div>
+          <button onclick="irACierreDineroPaso2()" class="btn-primary">Continuar a Conteo de Dinero →</button>
         </div>
+      </div>
 
+      <!-- Cierre Paso 2: Conteo de Dinero -->
+      <div id="encargada-cierre-paso2" class="hidden">
+        <button class="btn-secondary" onclick="volverACierreInventarioPaso1()" style="margin-bottom:10px;">← Volver a Inventario</button>
+        
         <div class="inner-card">
-          <h4>💵 Reporte de Dinero al Cierre</h4>
-          <div class="form-group"><label>Efectivo Recaudado ($):</label><input type="number" id="cierre-efectivo" value="0"></div>
-          <div class="form-group"><label>Nequi Recaudado ($):</label><input type="number" id="cierre-nequi" value="0"></div>
-          <div class="form-group"><label>Bancolombia Recaudado ($):</label><input type="number" id="cierre-bancolombia" value="0"></div>
+          <div style="background:#ea580c; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-size:0.75rem; font-weight:bold; margin-bottom:8px;">PASO 2 DE 2</div>
+          <h4>💵 Conteo y Reporte de Dinero</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Ingresa el dinero recaudado en cada cuenta:</p>
+          <div class="form-group"><label>Efectivo Físico en Caja ($):</label><input type="number" id="cierre-efectivo" value="0"></div>
+          <div class="form-group"><label>Recaudado en Nequi ($):</label><input type="number" id="cierre-nequi" value="0"></div>
+          <div class="form-group"><label>Recaudado en Bancolombia ($):</label><input type="number" id="cierre-bancolombia" value="0"></div>
         </div>
 
         <div class="inner-card">
@@ -383,7 +408,7 @@
           <textarea id="encargada-observaciones" rows="3" placeholder="Ej: Faltó dar un vuelto de $1.000..."></textarea>
         </div>
 
-        <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Enviar Cierre por WhatsApp</button>
+        <button onclick="generarReporteCierre()" class="btn-primary" style="background-color:#22c55e;">Finalizar y Enviar Cierre por WhatsApp</button>
       </div>
 
     </section>
@@ -394,7 +419,7 @@
       
       <div class="inner-card">
         <h4>📋 Tareas / Preparaciones Diarias</h4>
-        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Marca lo que ya dejaste listo:</p>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Selecciona ÚNICAMENTE lo que dejaste listo hoy:</p>
         <div id="lista-checklist-cocina"></div>
       </div>
 
