@@ -257,7 +257,6 @@ function renderDesempenoAdmin() {
 function renderRendimientoMensual() {
   const mesSel = document.getElementById('desempeno-mes-select').value;
   
-  // Filtrar movimientos del mes seleccionado
   const movsMes = db.movimientos.filter(m => {
     return m.isoDate === mesSel || (m.fechaRaw && m.fechaRaw.includes(mesSel));
   });
@@ -265,7 +264,6 @@ function renderRendimientoMensual() {
   let totVentas = 0;
   let totGastos = 0;
   
-  // Mapeo por día de la semana (3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado, 0=Domingo, 1=Lunes)
   const nombresDias = { 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo', 1: 'Lunes' };
   let acumuladoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 };
   let conteoDias = { 3: 0, 4: 0, 5: 0, 6: 0, 0: 0, 1: 0 };
@@ -290,7 +288,6 @@ function renderRendimientoMensual() {
   document.getElementById('resumen-mes-ventas').innerText = `$${totVentas.toLocaleString()}`;
   document.getElementById('resumen-mes-gastos').innerText = `$${totGastos.toLocaleString()}`;
 
-  // Buscar valor máximo para escalar barras gráficos
   let maxPromedio = 1;
   const promedios = {};
   
@@ -429,11 +426,12 @@ function eliminarUsuario(index) {
   renderListaUsuariosAdmin();
 }
 
-// --- MÓDULO ENCARGADA ---
+// --- MÓDULO ENCARGADA MEJORADO ---
 function cargarAperturaEncargada() {
   document.getElementById('encargada-step-apertura').classList.remove('hidden');
   document.getElementById('encargada-step-operacion').classList.add('hidden');
-  document.getElementById('encargada-step-cierre').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
 
   const cont = document.getElementById('lista-apertura-bebidas');
   cont.innerHTML = db.bebidas.map(b => `
@@ -471,6 +469,21 @@ function validarYGuardarApertura() {
   document.getElementById('encargada-step-operacion').classList.remove('hidden');
 }
 
+function cambiarSubTabEncargada(tab) {
+  document.getElementById('tab-gasto').classList.remove('active');
+  document.getElementById('tab-entrada').classList.remove('active');
+  document.getElementById('subtab-view-gasto').classList.add('hidden');
+  document.getElementById('subtab-view-entrada').classList.add('hidden');
+
+  if (tab === 'gasto') {
+    document.getElementById('tab-gasto').classList.add('active');
+    document.getElementById('subtab-view-gasto').classList.remove('hidden');
+  } else {
+    document.getElementById('tab-entrada').classList.add('active');
+    document.getElementById('subtab-view-entrada').classList.remove('hidden');
+  }
+}
+
 function registrarGasto(e) {
   e.preventDefault();
   const concepto = document.getElementById('gasto-concepto').value;
@@ -494,9 +507,11 @@ function registrarEntradaBebida(e) {
   e.target.reset();
 }
 
-function irACierreTurno() {
+// Paso 1 Cierre: Inventario
+function irACierreInventarioPaso1() {
   document.getElementById('encargada-step-operacion').classList.add('hidden');
-  document.getElementById('encargada-step-cierre').classList.remove('hidden');
+  document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
+  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
 
   const cont = document.getElementById('lista-cierre-bebidas');
   cont.innerHTML = db.bebidas.map(b => {
@@ -506,7 +521,7 @@ function irACierreTurno() {
 
     return `
       <div class="form-group">
-        <label>${b.nombre} (Stock Disponible + Entradas = ${totalEsperadoSinVentas}):</label>
+        <label>${b.nombre} (Inicial: ${inicial} + Compras: ${entradas} = Total: ${totalEsperadoSinVentas}):</label>
         <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final física">
       </div>
     `;
@@ -514,8 +529,19 @@ function irACierreTurno() {
 }
 
 function volverAOperacion() {
-  document.getElementById('encargada-step-cierre').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
   document.getElementById('encargada-step-operacion').classList.remove('hidden');
+}
+
+// Paso 2 Cierre: Dinero
+function irACierreDineroPaso2() {
+  document.getElementById('encargada-cierre-paso1').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
+}
+
+function volverACierreInventarioPaso1() {
+  document.getElementById('encargada-cierre-paso2').classList.add('hidden');
+  document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
 }
 
 function generarReporteCierre() {
@@ -625,21 +651,18 @@ function cargarModuloCocina() {
 function generarReporteCocina() {
   let msg = `*🥬 INVENTARIO Y PREPARACIÓN COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
 
+  // SOLO incluir tareas seleccionadas (completadas)
   let tareasCompletadas = [];
-  let tareasPendientes = [];
   db.tareasCocina.forEach(t => {
     const chk = document.getElementById(`tarea-check-${t.id}`);
     if (chk && chk.checked) {
       tareasCompletadas.push(`✅ ${t.tarea}`);
-    } else {
-      tareasPendientes.push(`❌ ${t.tarea}`);
     }
   });
 
-  msg += `*📋 TAREAS Y PREPARACIONES:*\n`;
-  if (tareasCompletadas.length > 0) msg += tareasCompletadas.join('\n') + '\n';
-  if (tareasPendientes.length > 0) msg += tareasPendientes.join('\n') + '\n';
-  msg += `\n`;
+  if (tareasCompletadas.length > 0) {
+    msg += `*📋 PREPARACIONES REALIZADAS HOY:*\n` + tareasCompletadas.join('\n') + `\n\n`;
+  }
 
   let disponibles = [];
   let compras = [];
