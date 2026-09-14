@@ -73,7 +73,8 @@ label {
 input[type="text"],
 input[type="number"],
 input[type="password"],
-select {
+select,
+textarea {
   width: 100%;
   padding: 12px;
   background-color: #0f172a;
@@ -84,7 +85,7 @@ select {
   margin-bottom: 8px;
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #38bdf8;
 }
@@ -232,4 +233,37 @@ input:focus, select:focus {
 
 .select-full {
   margin-bottom: 8px;
+}
+
+/* Navegación Inferior */
+.nav-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-item.active {
+  color: #ea580c;
+  font-weight: bold;
+}
+
+.nav-item span {
+  font-size: 1.2rem;
 }
