@@ -52,8 +52,6 @@
     .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
     .txt-green { color: #16a34a; font-weight: bold; }
     .txt-red { color: #dc2626; font-weight: bold; }
-    .bar-container { background: #e2e8f0; border-radius: 4px; height: 8px; width: 100%; margin-top: 4px; overflow: hidden; }
-    .bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease; }
   </style>
 </head>
 <body>
@@ -108,7 +106,6 @@
         <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Módulos de Gestión</h3>
         <div class="grid-cards">
           
-          <!-- TARJETA DEL POS -->
           <div class="app-card" onclick="verSubModuloAdmin('pos')">
             <div class="card-icon icon-orange">🍽️</div>
             <div class="card-title">Punto de Venta (POS)</div>
@@ -165,12 +162,16 @@
         <button class="btn-secondary" onclick="volverAlHub()" style="margin-bottom: 12px; width: auto;">← Volver al Hub</button>
         
         <!-- POS -->
-        <div id="pos-container" style="display: none;"></div>
+        <div id="pos-container" style="display: none;">
+          <h3>🍽️ Punto de Venta (POS)</h3>
+          <div id="pos-content" style="margin-top: 10px;">
+            <!-- Renderizado dinámico de POS -->
+          </div>
+        </div>
 
         <!-- ALMACÉN CENTRAL -->
         <div id="almacen-container" style="display: none;">
           <h3 style="margin-bottom: 10px;">📦 Almacén Central (Bodega)</h3>
-          
           <div class="inner-card">
             <h4>Registrar Movimiento de Entrada / Salida</h4>
             <form onsubmit="registrarMovimientoAlmacen(event)" style="margin-top: 8px;">
@@ -366,7 +367,6 @@
   <script src="app.js"></script>
   <script src="pos.js"></script>
   <script>
-    // PINs por defecto del sistema
     const ROLES = {
       '1234': { nombre: 'Administrador', esAdmin: true },
       '2222': { nombre: 'Encargada', esAdmin: false },
@@ -384,7 +384,6 @@
         
         document.getElementById('user-role-badge').innerText = usuario.nombre;
         
-        // Aplicar permisos visuales según rol
         const elementosAdmin = document.querySelectorAll('.modulo-solo-admin');
         elementosAdmin.forEach(el => {
           el.style.display = usuario.esAdmin ? '' : 'none';
@@ -431,8 +430,6 @@
       document.getElementById('vista-submodulo').style.display = 'block';
 
       ocultarTodosSubmodulos();
-
-      // Desmarcar ítems del nav
       document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 
       if (modulo === 'pos') {
@@ -440,7 +437,15 @@
         if (posCont) posCont.style.display = 'block';
         const navBtn = document.getElementById('nav-item-pos');
         if (navBtn) navBtn.classList.add('active');
-        if (typeof renderPOS === 'function') renderPOS();
+        
+        // Ejecución flexible para funciones pos
+        if (typeof renderPOS === 'function') {
+          renderPOS();
+        } else if (typeof renderPOSAdmin === 'function') {
+          renderPOSAdmin();
+        } else if (typeof initPOS === 'function') {
+          initPOS();
+        }
       } else if (modulo === 'almacen') {
         const almacCont = document.getElementById('almacen-container');
         if (almacCont) almacCont.style.display = 'block';
