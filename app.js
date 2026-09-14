@@ -107,6 +107,7 @@ function cerrarSesion() {
   document.getElementById('sec-admin').classList.add('hidden');
   document.getElementById('sec-encargada').classList.add('hidden');
   document.getElementById('sec-cocina').classList.add('hidden');
+  document.getElementById('sec-pos').classList.add('hidden');
   document.getElementById('app-nav').classList.add('hidden');
   document.getElementById('btn-logout').classList.add('hidden');
   document.getElementById('login-pin').value = '';
@@ -142,6 +143,15 @@ function verSubModuloAdmin(modulo) {
     const el = document.getElementById(`admin-view-${m}`);
     if (el) el.classList.add('hidden');
   });
+
+  document.getElementById('sec-pos').classList.add('hidden');
+
+  if (modulo === 'pos') {
+    document.getElementById('admin-view-hub').classList.add('hidden');
+    document.getElementById('sec-pos').classList.remove('hidden');
+    if (typeof renderPOS === 'function') renderPOS();
+    return;
+  }
 
   document.getElementById(`admin-view-${modulo}`).classList.remove('hidden');
 
