@@ -11,29 +11,23 @@ let posState = {
   mesaSeleccionada: null,
   categoriaActiva: 'Todas',
   
-  // CATÁLOGO ORGANIZADO POR CATEGORÍAS
   productos: [
-    // Arepas
     { id: 201, nombre: 'Arepa Queso', precio: 8000, categoria: 'Arepas' },
     { id: 202, nombre: 'Arepa Mixta', precio: 14000, categoria: 'Arepas' },
     { id: 203, nombre: 'Arepa Catira', precio: 12000, categoria: 'Arepas' },
 
-    // Pizzas
     { id: 301, nombre: 'Pizza Jamón y Queso', precio: 25000, categoria: 'Pizzas', admiteAdicionales: true },
     { id: 302, nombre: 'Pizza Pepperoni', precio: 28000, categoria: 'Pizzas', admiteAdicionales: true },
     { id: 303, nombre: 'Pizza Especial Chamos', precio: 35000, categoria: 'Pizzas', admiteAdicionales: true },
 
-    // Patacones
     { id: 401, nombre: 'Patacón con Carne', precio: 16000, categoria: 'Patacones' },
     { id: 402, nombre: 'Patacón Mixto', precio: 20000, categoria: 'Patacones' },
 
-    // Panadería / Tradicional
     { id: 101, nombre: 'Pan de Jamón', precio: 35000, categoria: 'Panadería' },
     { id: 102, nombre: 'Tequeños (6 und)', precio: 12000, categoria: 'Panadería' },
     { id: 103, nombre: 'Golfeado c/Queso', precio: 8000, categoria: 'Panadería' }
   ],
 
-  // LISTA DE ADICIONALES DISPONIBLES
   adicionales: [
     { nombre: 'Extra Queso', precio: 3000 },
     { nombre: 'Tocineta', precio: 4000 },
@@ -121,12 +115,10 @@ function volverAMesas() {
   renderPOS();
 }
 
-// --- DETALLE DE LA MESA Y SELECCIÓN POR CATEGORÍAS ---
+// --- DETALLE DE LA MESA Y PEDIDO CON OBSERVACIONES ---
 function renderDetalleMesa(container) {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
   const total = mesa.pedido.reduce((acc, p) => acc + (p.precio * p.cant), 0);
-
-  // Obtener la lista única de categorías
   const categorias = ['Todas', 'Arepas', 'Pizzas', 'Patacones', 'Panadería'];
 
   let html = `
@@ -138,7 +130,7 @@ function renderDetalleMesa(container) {
       </div>
     </div>
 
-    <!-- PRODUCTOS EN EL PEDIDO -->
+    <!-- LISTA DE PRODUCTOS AGREGADOS -->
     <div class="inner-card">
       <h5 style="margin-bottom:8px; color:#475569;">Items en Pedido:</h5>
   `;
@@ -148,9 +140,10 @@ function renderDetalleMesa(container) {
   } else {
     mesa.pedido.forEach((p, idx) => {
       html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:6px; border-bottom: 1px dashed #e2e8f0; font-size:0.85rem;">
           <div>
             <strong>${p.nombre}</strong><br>
+            ${p.nota ? `<span style="font-size:0.75rem; color:#ef4444; font-style:italic;">📝 Nota: ${p.nota}</span><br>` : ''}
             <small style="color:#64748b;">$${p.precio.toLocaleString()} x ${p.cant} = $${(p.precio * p.cant).toLocaleString()}</small>
           </div>
           <div style="display:flex; gap:4px;">
@@ -171,7 +164,7 @@ function renderDetalleMesa(container) {
       <button onclick="imprimirTicketMesa()" class="btn-secondary" style="flex:1; margin-top:0;">🖨️ Ticket</button>
     </div>
 
-    <!-- SECTOR DE CATEGORÍAS (BOTONES DE FILTRO) -->
+    <!-- SECTOR DE CATEGORÍAS -->
     <div class="inner-card" style="margin-top:15px;">
       <h5 style="margin-bottom:8px; color:#475569;">Categorías:</h5>
       <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px;">
@@ -195,27 +188,17 @@ function renderDetalleMesa(container) {
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:10px;">
   `;
 
-  // Filtrar productos
   const filtrados = posState.categoriaActiva === 'Todas' 
     ? posState.productos 
     : posState.productos.filter(p => p.categoria === posState.categoriaActiva);
 
   filtrados.forEach(prod => {
-    if (prod.admiteAdicionales) {
-      html += `
-        <button onclick="abrirModalAdicionales(${prod.id})" class="btn-secondary" style="text-align:left; font-size:0.75rem; padding:8px; margin-top:0; border-color:#ea580c;">
-          <strong>${prod.nombre} ➕</strong><br>
-          <span style="color:#ea580c;">$${prod.precio.toLocaleString()}</span>
-        </button>
-      `;
-    } else {
-      html += `
-        <button onclick="agregarProductoAMesa('${prod.nombre}', ${prod.precio})" class="btn-secondary" style="text-align:left; font-size:0.75rem; padding:8px; margin-top:0;">
-          <strong>${prod.nombre}</strong><br>
-          <span style="color:#ea580c;">$${prod.precio.toLocaleString()}</span>
-        </button>
-      `;
-    }
+    html += `
+      <button onclick="solicitarDetalleProducto(${prod.id})" class="btn-secondary" style="text-align:left; font-size:0.75rem; padding:8px; margin-top:0;">
+        <strong>${prod.nombre} ${prod.admiteAdicionales ? '➕' : ''}</strong><br>
+        <span style="color:#ea580c;">$${prod.precio.toLocaleString()}</span>
+      </button>
+    `;
   });
 
   html += `
@@ -231,32 +214,40 @@ function filtrarCategoria(cat) {
   renderPOS();
 }
 
-// --- MODAL DE ADICIONALES PARA PIZZAS ---
-function abrirModalAdicionales(prodId) {
+// --- MODAL PARA OBSERVACIONES Y ADICIONALES ---
+function solicitarDetalleProducto(prodId) {
   const prod = posState.productos.find(p => p.id === prodId);
   if (!prod) return;
 
-  let opcionesHTML = posState.adicionales.map((adic, idx) => `
-    <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.85rem; cursor:pointer;">
-      <input type="checkbox" id="adic-${idx}" value="${adic.precio}" data-nombre="${adic.nombre}">
-      <span>${adic.nombre}</span>
-      <strong style="color:#ea580c;">+$${adic.precio.toLocaleString()}</strong>
-    </label>
-  `).join('');
+  let adicionalesHTML = '';
+  if (prod.admiteAdicionales) {
+    adicionalesHTML = `
+      <p style="font-size:0.75rem; font-weight:bold; color:#475569; margin-top:10px; margin-bottom:6px;">Adicionales:</p>
+      ${posState.adicionales.map((adic, idx) => `
+        <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.8rem; cursor:pointer;">
+          <input type="checkbox" id="adic-${idx}" value="${adic.precio}" data-nombre="${adic.nombre}">
+          <span>${adic.nombre}</span>
+          <strong style="color:#ea580c;">+$${adic.precio.toLocaleString()}</strong>
+        </label>
+      `).join('')}
+    `;
+  }
 
   const modal = document.createElement('div');
-  modal.id = 'pos-modal-adicionales';
+  modal.id = 'pos-modal-opciones';
   modal.style = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
   modal.innerHTML = `
     <div style="background:white; padding:20px; border-radius:12px; width:85%; max-width:320px;">
       <h4 style="margin-bottom:4px; color:#0f172a;">${prod.nombre}</h4>
-      <p style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">Selecciona los adicionales:</p>
       
-      ${opcionesHTML}
+      ${adicionalesHTML}
 
-      <div style="display:flex; gap:8px; margin-top:15px;">
-        <button onclick="cerrarModalAdicionales()" class="btn-secondary" style="margin-top:0;">Cancelar</button>
-        <button onclick="confirmarAdicionales(${prod.id})" class="btn-primary" style="margin-top:0;">Agregar</button>
+      <p style="font-size:0.75rem; font-weight:bold; color:#475569; margin-top:10px; margin-bottom:4px;">Observación / Nota Especial:</p>
+      <input type="text" id="input-nota-producto" placeholder="Ej: Sin cebolla, Salsa aparte..." style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; margin-bottom:12px;">
+
+      <div style="display:flex; gap:8px;">
+        <button onclick="cerrarModalOpciones()" class="btn-secondary" style="margin-top:0;">Cancelar</button>
+        <button onclick="confirmarAgregarProducto(${prod.id})" class="btn-primary" style="margin-top:0;">Agregar al Pedido</button>
       </div>
     </div>
   `;
@@ -264,42 +255,51 @@ function abrirModalAdicionales(prodId) {
   document.body.appendChild(modal);
 }
 
-function cerrarModalAdicionales() {
-  const modal = document.getElementById('pos-modal-adicionales');
+function cerrarModalOpciones() {
+  const modal = document.getElementById('pos-modal-opciones');
   if (modal) modal.remove();
 }
 
-function confirmarAdicionales(prodId) {
+function confirmarAgregarProducto(prodId) {
   const prod = posState.productos.find(p => p.id === prodId);
   let nombreFinal = prod.nombre;
   let precioFinal = prod.precio;
 
-  let extras = [];
-  posState.adicionales.forEach((adic, idx) => {
-    const chk = document.getElementById(`adic-${idx}`);
-    if (chk && chk.checked) {
-      precioFinal += adic.precio;
-      extras.push(adic.nombre);
-    }
-  });
+  // Procesar Adicionales si aplican
+  if (prod.admiteAdicionales) {
+    let extras = [];
+    posState.adicionales.forEach((adic, idx) => {
+      const chk = document.getElementById(`adic-${idx}`);
+      if (chk && chk.checked) {
+        precioFinal += adic.precio;
+        extras.push(adic.nombre);
+      }
+    });
 
-  if (extras.length > 0) {
-    nombreFinal += ` (${extras.join(', ')})`;
+    if (extras.length > 0) {
+      nombreFinal += ` (+${extras.join(', ')})`;
+    }
   }
 
-  agregarProductoAMesa(nombreFinal, precioFinal);
-  cerrarModalAdicionales();
+  // Capturar Observación
+  const notaInput = document.getElementById('input-nota-producto');
+  const nota = notaInput ? notaInput.value.trim() : '';
+
+  agregarProductoAMesa(nombreFinal, precioFinal, nota);
+  cerrarModalOpciones();
 }
 
 // --- AGREGAR Y MANEJAR PEDIDOS ---
-function agregarProductoAMesa(nombre, precio) {
+function agregarProductoAMesa(nombre, precio, nota = '') {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
-  const existe = mesa.pedido.find(p => p.nombre === nombre);
+  
+  // Buscar si existe el mismo producto CON LA MISMA NOTA
+  const existe = mesa.pedido.find(p => p.nombre === nombre && p.nota === nota);
 
   if (existe) {
     existe.cant += 1;
   } else {
-    mesa.pedido.push({ nombre, precio, cant: 1 });
+    mesa.pedido.push({ nombre, precio, cant: 1, nota });
   }
 
   mesa.estado = 'ocupada';
@@ -328,6 +328,7 @@ function confirmarComanda() {
   alert("🔔 ¡Comanda enviada a cocina!");
 }
 
+// --- IMPRESIÓN CON NOTAS DE COCINA ---
 function imprimirTicketMesa() {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
   if (!mesa || mesa.pedido.length === 0) {
@@ -346,6 +347,7 @@ function imprimirTicketMesa() {
           body { font-family: monospace; font-size: 12px; padding: 10px; margin: 0; }
           .center { text-align: center; }
           .row { display: flex; justify-content: space-between; margin: 4px 0; }
+          .nota { font-size: 10px; color: #000; font-weight: bold; margin-bottom: 4px; padding-left: 8px; }
           hr { border-top: 1px dashed #000; }
         </style>
       </head>
@@ -361,6 +363,7 @@ function imprimirTicketMesa() {
             <span>${p.cant}x ${p.nombre}</span>
             <span>$${(p.precio * p.cant).toLocaleString()}</span>
           </div>
+          ${p.nota ? `<div class="nota">** NOTA: ${p.nota} **</div>` : ''}
         `).join('')}
         <hr>
         <div class="row" style="font-weight:bold; font-size:14px;">
