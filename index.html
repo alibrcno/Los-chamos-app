@@ -56,7 +56,7 @@
     .bar-container { background: #e2e8f0; border-radius: 6px; height: 12px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #ea580c; height: 100%; border-radius: 6px; }
 
-    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-around; padding: 8px 0; z-index: 100; }
+    .nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
     .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; text-decoration: none; cursor: pointer; }
     .nav-item.active { color: #ea580c; font-weight: bold; }
     .nav-item span { font-size: 1.2rem; }
@@ -435,6 +435,11 @@
 
     </section>
 
+    <!-- MÓDULO POS MESAS Y DOMICILIOS -->
+    <section id="sec-pos" class="hidden">
+      <div id="pos-container"></div>
+    </section>
+
     <!-- MÓDULO COCINA -->
     <section id="sec-cocina" class="hidden">
       <h3>👨‍🍳 Módulo Cocina</h3>
@@ -452,24 +457,19 @@
         <textarea id="cocina-observaciones" rows="3" placeholder="Ej: Falta aceite para mañana..."></textarea>
       </div>
       <button class="btn-primary" onclick="generarReporteCocina()">Enviar Inventario por WhatsApp</button>
-    </<!-- MÓDULO POS MESAS -->
-<section id="sec-pos" class="hidden">
-  <div id="pos-container"></div>
-</section>
-<div class="nav-item" onclick="document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById('sec-pos').classList.remove('hidden');">
-  <span>📋</span>
-  <small>POS</small>
-</div>
+    </section>
 
   </div>
 
   <nav id="app-nav" class="nav-bottom hidden">
     <div class="nav-item active" onclick="navegarBarra('hub')"><span>🏠</span> Hub</div>
+    <div class="nav-item" onclick="navegarBarra('pos')"><span>📋</span> POS</div>
     <div class="nav-item" onclick="navegarBarra('almacen')"><span>📦</span> Almacén</div>
     <div class="nav-item" onclick="navegarBarra('desempeno')"><span>📈</span> Métricas</div>
     <div class="nav-item" onclick="navegarBarra('finanzas')"><span>💵</span> Finanzas</div>
   </nav>
-<script src="pos.js"></script>
+
+  <script src="pos.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
