@@ -1,4 +1,4 @@
-// --- BASE DE DATOS Y ESTADO LOCAL ---
+// --- BASE DE DATOS Y ESTADO LOCAL UNIFICADO ---
 let db = {
   usuarios: JSON.parse(localStorage.getItem('chamos_usuarios')) || [
     { usuario: 'admin', pin: '1234', rol: 'admin' },
@@ -29,6 +29,16 @@ let db = {
   ],
   movimientos: JSON.parse(localStorage.getItem('chamos_movimientos')) || [],
   
+  // Módulo de Ventas / POS & Domicilios
+  catalogoPOS: [
+    { id: 101, nombre: 'Pizza Familiar', precio: 35000 },
+    { id: 102, nombre: 'Hamburguesa Especial', precio: 18000 },
+    { id: 103, nombre: 'Perro Caliente', precio: 12000 },
+    { id: 104, nombre: 'Tequeños x 6', precio: 15000 }
+  ],
+  carritoPOS: [],
+  ordenesDomicilio: JSON.parse(localStorage.getItem('chamos_domicilios')) || [],
+
   // Estado Temporal del Turno
   gastosTurnoActual: [],
   entradasBebidasTurno: {},
@@ -50,9 +60,10 @@ function guardarBD() {
   localStorage.setItem('chamos_tareas', JSON.stringify(db.tareasCocina));
   localStorage.setItem('chamos_almacen', JSON.stringify(db.almacen));
   localStorage.setItem('chamos_movimientos', JSON.stringify(db.movimientos));
+  localStorage.setItem('chamos_domicilios', JSON.stringify(db.ordenesDomicilio));
 }
 
-// AL CARGAR LA PÁGINA: AUTORECORDAR USUARIO
+// AL CARGAR LA PÁGINA
 window.addEventListener('DOMContentLoaded', () => {
   const usuarioGuardado = localStorage.getItem('chamos_usuario_recordado');
   if (usuarioGuardado) {
@@ -107,7 +118,6 @@ function cerrarSesion() {
   document.getElementById('sec-admin').classList.add('hidden');
   document.getElementById('sec-encargada').classList.add('hidden');
   document.getElementById('sec-cocina').classList.add('hidden');
-  document.getElementById('sec-pos').classList.add('hidden');
   document.getElementById('app-nav').classList.add('hidden');
   document.getElementById('btn-logout').classList.add('hidden');
   document.getElementById('login-pin').value = '';
@@ -144,16 +154,8 @@ function verSubModuloAdmin(modulo) {
     if (el) el.classList.add('hidden');
   });
 
-  document.getElementById('sec-pos').classList.add('hidden');
-
-  if (modulo === 'pos') {
-    document.getElementById('admin-view-hub').classList.add('hidden');
-    document.getElementById('sec-pos').classList.remove('hidden');
-    if (typeof renderPOS === 'function') renderPOS();
-    return;
-  }
-
-  document.getElementById(`admin-view-${modulo}`).classList.remove('hidden');
+  const moduloObjetivo = document.getElementById(`admin-view-${modulo}`);
+  if (moduloObjetivo) moduloObjetivo.classList.remove('hidden');
 
   if (modulo === 'almacen') renderAlmacenAdmin();
   else if (modulo === 'finanzas') renderFinanzasAdmin();
@@ -173,65 +175,22 @@ function navegarBarra(vista) {
   verSubModuloAdmin(vista);
 }
 
-// --- EDICIÓN Y GESTIÓN COMPLETA DE USUARIOS / PINs ---
-function renderListaUsuariosAdmin() {
-  document.getElementById('admin-lista-usuarios').innerHTML = db.usuarios.map((u, index) => `
-    <div class="inner-card" style="margin-bottom:10px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <strong>👤 ${u.usuario} (${u.rol.toUpperCase()})</strong>
-        ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
-      </div>
-      <div style="display:flex; gap:8px;">
-        <input type="password" id="edit-pin-${index}" value="${u.pin}" style="padding:6px; font-size:0.85rem;" placeholder="PIN">
-        <button class="btn-secondary" onclick="modificarPinUsuario(${index})" style="background:#ea580c; color:white; border:none;">💾 Guardar</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function modificarPinUsuario(index) {
-  const nuevoPin = document.getElementById(`edit-pin-${index}`).value.trim();
-  if (!nuevoPin) { alert("⚠️ El PIN no puede estar vacío"); return; }
-  
-  db.usuarios[index].pin = nuevoPin;
-  guardarBD();
-  alert(`✅ PIN del usuario '${db.usuarios[index].usuario}' actualizado exitosamente.`);
-  renderListaUsuariosAdmin();
-}
-
-function agregarNuevoUsuario(e) {
-  e.preventDefault();
-  const nom = document.getElementById('nuevo-user-nombre').value.trim();
-  const pin = document.getElementById('nuevo-user-pin').value.trim();
-  const rol = document.getElementById('nuevo-user-rol').value;
-
-  db.usuarios.push({ usuario: nom, pin, rol });
-  guardarBD();
-  renderListaUsuariosAdmin();
-  e.target.reset();
-  alert("✅ Usuario creado exitosamente");
-}
-
-function eliminarUsuario(index) {
-  if (confirm(`¿Eliminar al usuario ${db.usuarios[index].usuario}?`)) {
-    db.usuarios.splice(index, 1);
-    guardarBD();
-    renderListaUsuariosAdmin();
-  }
-}
-
-// --- OTROS SUBMÓDULOS ADMIN ---
+// --- SUBMÓDULO ALMACÉN CENTRAL ---
 function renderAlmacenAdmin() {
   const select = document.getElementById('almacen-item-select');
-  select.innerHTML = db.almacen.map(i => `<option value="${i.id}">${i.nombre} (${i.stock} ${i.unidad})</option>`).join('');
+  if (select) {
+    select.innerHTML = db.almacen.map(i => `<option value="${i.id}">${i.nombre} (${i.stock} ${i.unidad})</option>`).join('');
+  }
 
   const cont = document.getElementById('admin-lista-almacen');
-  cont.innerHTML = db.almacen.map(i => `
-    <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock Bodega: <strong>${i.stock} ${i.unidad}</strong></small></div>
-      <button class="btn-secondary" onclick="eliminarItemAlmacen(${i.id})">🗑️</button>
-    </div>
-  `).join('');
+  if (cont) {
+    cont.innerHTML = db.almacen.map(i => `
+      <div class="inner-card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div><strong>${i.nombre}</strong><br><small style="color:#64748b;">Stock Bodega: <strong>${i.stock} ${i.unidad}</strong></small></div>
+        <button class="btn-secondary" onclick="eliminarItemAlmacen(${i.id})">🗑️</button>
+      </div>
+    `).join('');
+  }
 }
 
 function registrarMovimientoAlmacen(e) {
@@ -267,6 +226,7 @@ function eliminarItemAlmacen(id) {
   guardarBD(); renderAlmacenAdmin();
 }
 
+// --- SUBMÓDULO FINANZAS ---
 function renderFinanzasAdmin() {
   document.getElementById('lista-movimientos-diarios-finanzas').innerHTML = db.movimientos.map(m => {
     const totIngresos = (m.ingresos.Efectivo || 0) + (m.ingresos.Nequi || 0) + (m.ingresos.Bancolombia || 0) + (m.ingresos.Datáfono || 0);
@@ -308,6 +268,49 @@ function registrarMovimientoAdmin(e) {
   guardarBD(); renderFinanzasAdmin(); cargarAdminHub(); alert("✅ Registrado"); e.target.reset();
 }
 
+// --- EDICIÓN Y GESTIÓN DE USUARIOS ---
+function renderListaUsuariosAdmin() {
+  document.getElementById('admin-lista-usuarios').innerHTML = db.usuarios.map((u, index) => `
+    <div class="inner-card" style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong>👤 ${u.usuario} (${u.rol.toUpperCase()})</strong>
+        ${u.usuario !== 'admin' ? `<button class="btn-secondary" onclick="eliminarUsuario(${index})">🗑️</button>` : ''}
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="edit-pin-${index}" value="${u.pin}" style="padding:6px; font-size:0.85rem;" placeholder="PIN">
+        <button class="btn-secondary" onclick="modificarPinUsuario(${index})" style="background:#ea580c; color:white; border:none;">💾 Guardar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function modificarPinUsuario(index) {
+  const nuevoPin = document.getElementById(`edit-pin-${index}`).value.trim();
+  if (!nuevoPin) { alert("⚠️ El PIN no puede estar vacío"); return; }
+  db.usuarios[index].pin = nuevoPin;
+  guardarBD();
+  alert(`✅ PIN actualizado`);
+  renderListaUsuariosAdmin();
+}
+
+function agregarNuevoUsuario(e) {
+  e.preventDefault();
+  const nom = document.getElementById('nuevo-user-nombre').value.trim();
+  const pin = document.getElementById('nuevo-user-pin').value.trim();
+  const rol = document.getElementById('nuevo-user-rol').value;
+
+  db.usuarios.push({ usuario: nom, pin, rol });
+  guardarBD(); renderListaUsuariosAdmin(); e.target.reset(); alert("✅ Usuario creado");
+}
+
+function eliminarUsuario(index) {
+  if (confirm(`¿Eliminar usuario ${db.usuarios[index].usuario}?`)) {
+    db.usuarios.splice(index, 1);
+    guardarBD(); renderListaUsuariosAdmin();
+  }
+}
+
+// --- SUBMÓDULOS DE CONFIGURACIÓN ---
 function renderDesempenoAdmin() {
   const mesInput = document.getElementById('desempeno-mes-select');
   if (!mesInput.value) mesInput.value = new Date().toISOString().substring(0, 7);
@@ -425,7 +428,7 @@ function eliminarTarea(id) {
   guardarBD(); renderListaChecklistAdmin();
 }
 
-// --- MÓDULO ENCARGADA (NUEVO DISEÑO TARJETERÍA) ---
+// --- MÓDULO ENCARGADA ---
 function volverEncargadaHub() {
   document.getElementById('encargada-hub').classList.remove('hidden');
   document.getElementById('encargada-apertura-paso1').classList.add('hidden');
@@ -440,17 +443,12 @@ function volverEncargadaHub() {
 
 function verSubModuloEncargada(modulo) {
   document.getElementById('encargada-hub').classList.add('hidden');
-
-  if (modulo === 'apertura') {
-    iniciarAperturaEncargada();
-  } else if (modulo === 'gasto') {
-    document.getElementById('encargada-view-gasto').classList.remove('hidden');
-  } else if (modulo === 'entrada') {
+  if (modulo === 'apertura') iniciarAperturaEncargada();
+  else if (modulo === 'gasto') document.getElementById('encargada-view-gasto').classList.remove('hidden');
+  else if (modulo === 'entrada') {
     document.getElementById('encargada-view-entrada').classList.remove('hidden');
     renderFormularioEntradaMasivaBebidas();
-  } else if (modulo === 'cierre') {
-    irACierrePaso1Bebidas();
-  }
+  } else if (modulo === 'cierre') irACierrePaso1Bebidas();
 }
 
 function iniciarAperturaEncargada() {
@@ -467,7 +465,6 @@ function irAAperturaInsumosPaso2() {
   db.bebidas.forEach(b => {
     db.aperturaDatos.bebidas[b.id] = parseInt(document.getElementById(`apertura-bebida-${b.id}`).value) || 0;
   });
-
   document.getElementById('encargada-apertura-paso1').classList.add('hidden');
   document.getElementById('encargada-apertura-paso2').classList.remove('hidden');
 
@@ -488,7 +485,6 @@ function irAAperturaSaldosPaso3() {
   db.insumosDesechables.forEach(i => {
     db.aperturaDatos.insumos[i.id] = parseInt(document.getElementById(`apertura-insumo-${i.id}`).value) || 0;
   });
-
   document.getElementById('encargada-apertura-paso2').classList.add('hidden');
   document.getElementById('encargada-apertura-paso3').classList.remove('hidden');
 }
@@ -516,26 +512,19 @@ function finalizarAperturaYNotificarAdmin() {
   msg += `- Datáfono: $${dat.toLocaleString()}\n\n`;
 
   msg += `*🥤 INVENTARIO INICIAL BEBIDAS:*\n`;
-  db.bebidas.forEach(b => {
-    msg += `• ${b.nombre}: ${db.aperturaDatos.bebidas[b.id] || 0} unds\n`;
-  });
+  db.bebidas.forEach(b => { msg += `• ${b.nombre}: ${db.aperturaDatos.bebidas[b.id] || 0} unds\n`; });
 
   msg += `\n*🍽️ INVENTARIO INICIAL INSUMOS:*\n`;
-  db.insumosDesechables.forEach(i => {
-    msg += `• ${i.nombre}: ${db.aperturaDatos.insumos[i.id] || 0} ${i.unidad}\n`;
-  });
+  db.insumosDesechables.forEach(i => { msg += `• ${i.nombre}: ${db.aperturaDatos.insumos[i.id] || 0} ${i.unidad}\n`; });
 
-  alert("✅ Apertura registrada con éxito. Se enviará la notificación al Administrador.");
-  
+  alert("✅ Apertura registrada con éxito.");
   const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
-
   volverEncargadaHub();
 }
 
 function renderFormularioEntradaMasivaBebidas() {
-  const cont = document.getElementById('contenedor-entradas-masivas-bebidas');
-  cont.innerHTML = db.bebidas.map(b => `
+  document.getElementById('contenedor-entradas-masivas-bebidas').innerHTML = db.bebidas.map(b => `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <span style="font-size:0.85rem; font-weight:600;">${b.nombre}</span>
       <input type="number" id="entrada-masiva-bebida-${b.id}" placeholder="+0" style="width:90px; text-align:center;">
@@ -555,12 +544,8 @@ function guardarEntradasMasivasBebidas() {
     }
   });
 
-  if (cargadas > 0) {
-    alert("✅ Se agregaron las bebidas al inventario del turno.");
-    volverEncargadaHub();
-  } else {
-    alert("ℹ️ No ingresaste cantidades.");
-  }
+  if (cargadas > 0) { alert("✅ Bebidas agregadas"); volverEncargadaHub(); }
+  else { alert("ℹ️ Ingresa alguna cantidad."); }
 }
 
 function registrarGasto(e) {
@@ -578,14 +563,13 @@ function registrarGasto(e) {
 // CIERRE DE TURNO
 function irACierrePaso1Bebidas() {
   document.getElementById('encargada-cierre-paso1').classList.remove('hidden');
-
   document.getElementById('lista-cierre-bebidas').innerHTML = db.bebidas.map(b => {
     const ini = db.aperturaDatos.bebidas[b.id] || 0;
     const ent = db.entradasBebidasTurno[b.id] || 0;
     return `
       <div class="form-group">
         <label>${b.nombre} (Inicial: ${ini} + Entradas: ${ent} = ${ini + ent}):</label>
-        <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final física">
+        <input type="number" id="cierre-bebida-${b.id}" placeholder="Cantidad final">
       </div>
     `;
   }).join('');
@@ -594,11 +578,10 @@ function irACierrePaso1Bebidas() {
 function irACierrePaso2Insumos() {
   document.getElementById('encargada-cierre-paso1').classList.add('hidden');
   document.getElementById('encargada-cierre-paso2').classList.remove('hidden');
-
   document.getElementById('lista-cierre-insumos').innerHTML = db.insumosDesechables.map(i => `
     <div class="form-group">
       <label>${i.nombre} (${i.unidad}):</label>
-      <input type="number" id="cierre-insumo-${i.id}" placeholder="Cantidad final física">
+      <input type="number" id="cierre-insumo-${i.id}" placeholder="Cantidad final">
     </div>
   `).join('');
 }
@@ -666,7 +649,6 @@ function generarReporteCierreCompleto() {
   const totalGastos = db.gastosTurnoActual.reduce((acc, g) => acc + g.valor, 0);
 
   const observaciones = document.getElementById('encargada-observaciones').value.trim();
-
   const fechaActual = new Date();
   const hoyFecha = fechaActual.toLocaleDateString();
 
@@ -682,30 +664,12 @@ function generarReporteCierreCompleto() {
   guardarBD();
 
   let msg = `*📊 CIERRE DE TURNO Y REPORTE OPERATIVO*\n📅 ${hoyFecha}\n\n`;
-  msg += `*💵 INGRESO NETO TOTAL DEL RESTAURANTE:*\n`;
-  msg += `- Ingreso Efectivo: $${totalIngresoEfectivo.toLocaleString()}\n`;
-  msg += `- Ingreso Nequi: $${totalIngresoNequi.toLocaleString()}\n`;
-  msg += `- Ingreso Bancolombia: $${totalIngresoBancolombia.toLocaleString()}\n`;
-  msg += `- Ingreso Datáfono: $${totalIngresoDatáfono.toLocaleString()}\n`;
-  msg += `👉 *INGRESO BRUTO TOTAL:* $${totalIngresoBrutoGeneral.toLocaleString()}\n`;
+  msg += `*💵 INGRESO NETO TOTAL:* $${totalIngresoBrutoGeneral.toLocaleString()}\n`;
   msg += `👉 *TOTAL GASTOS:* -$${totalGastos.toLocaleString()}\n\n`;
+  msg += `*🥤 VENTA BEBIDAS:* $${ventaEstimadaBebidas.toLocaleString()}\n${resumenBebidas}\n`;
+  msg += `*🍽️ INSUMOS FINAL:*\n${resumenInsumos}\n`;
 
-  msg += `*🥤 REFERENCIA VENTA BEBIDAS:* $${ventaEstimadaBebidas.toLocaleString()}\n`;
-  msg += `${resumenBebidas}\n`;
-
-  msg += `*🍽️ INVENTARIO INSUMOS Y DOBLADOS:*\n${resumenInsumos}\n`;
-
-  msg += `*🛒 COMPRAS SUGERIDAS (REABASTECIMIENTO):*\n`;
-  const todasSugeridas = [...comprasSugeridasBebidas, ...comprasSugeridasInsumos];
-  if (todasSugeridas.length > 0) {
-    msg += todasSugeridas.join('\n') + `\n\n`;
-  } else {
-    msg += `✅ Stock de bebidas e insumos completo.\n\n`;
-  }
-
-  if (observaciones !== "") {
-    msg += `*📝 OBSERVACIONES / NOVEDADES:*\n${observaciones}\n`;
-  }
+  if (observaciones !== "") msg += `*📝 OBSERVACIONES:*\n${observaciones}\n`;
 
   const url = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
@@ -728,7 +692,6 @@ function cargarModuloCocina() {
 
 function generarReporteCocina() {
   let msg = `*🥬 INVENTARIO COCINA - LOS CHAMOS*\n📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
-
   let tareas = [];
   db.tareasCocina.forEach(t => {
     const chk = document.getElementById(`tarea-check-${t.id}`);
@@ -746,7 +709,7 @@ function generarReporteCocina() {
   });
 
   msg += `*📦 STOCK ACTUAL:*\n${dispon.join('\n')}\n\n`;
-  msg += `*🛒 COMPRAS SUGERIDAS COCINA:*\n${compr.length > 0 ? compr.join('\n') : '✅ Stock completo.'}\n\n`;
+  msg += `*🛒 COMPRAS SUGERIDAS:*\n${compr.length > 0 ? compr.join('\n') : '✅ Stock completo.'}\n\n`;
 
   const obs = document.getElementById('cocina-observaciones').value.trim();
   if (obs !== "") msg += `*📝 OBSERVACIONES:*\n${obs}\n`;
