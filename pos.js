@@ -1,21 +1,17 @@
-// --- MESAS POR DEFECTO ---
+// --- MESAS Y DOMICILIOS INICIALES ---
 const MESAS_INICIALES = [
   { id: 1, nombre: 'Mesa 1', tipo: 'mesa', estado: 'libre', pedido: [] },
   { id: 2, nombre: 'Mesa 2', tipo: 'mesa', estado: 'libre', pedido: [] },
   { id: 3, nombre: 'Mesa 3', tipo: 'mesa', estado: 'libre', pedido: [] },
   { id: 4, nombre: 'Mesa 4', tipo: 'mesa', estado: 'libre', pedido: [] },
-  { id: 5, nombre: 'Barra', tipo: 'mesa', estado: 'libre', pedido: [] },
-  { id: 101, nombre: 'Domicilio 1', tipo: 'domicilio', estado: 'libre', pedido: [] },
-  { id: 102, nombre: 'Domicilio 2', tipo: 'domicilio', estado: 'libre', pedido: [] }
+  { id: 5, nombre: 'Barra', tipo: 'mesa', estado: 'libre', pedido: [] }
 ];
 
-// Cargar y asegurar que cada mesa tenga asignado un tipo
 let mesasGuardadas = JSON.parse(localStorage.getItem('chamos_pos_mesas'));
 
 if (!mesasGuardadas || !Array.isArray(mesasGuardadas) || mesasGuardadas.length === 0) {
   mesasGuardadas = MESAS_INICIALES;
 } else {
-  // Reparación automática de estructura si falta la propiedad tipo
   mesasGuardadas = mesasGuardadas.map(m => {
     if (!m.tipo) {
       m.tipo = m.nombre.toLowerCase().includes('domicilio') ? 'domicilio' : 'mesa';
@@ -31,18 +27,14 @@ let posState = {
   mesaSeleccionada: null,
   categoriaActiva: 'Todas',
   
-  // TAMAÑOS PIZZA TRADICIONAL
   tamanosPizzaTradicional: [
     { id: 'p_personal', nombre: 'Personal', precio: 15000, maxGratis: 2 },
     { id: 'p_mediana', nombre: 'Mediana', precio: 28000, maxGratis: 2 },
     { id: 'p_familiar', nombre: 'Familiar', precio: 42000, maxGratis: 2 }
   ],
 
-  // CATÁLOGO DE PRODUCTOS
   productos: [
     { id: 300, nombre: 'Pizza Tradicional (Armable)', categoria: 'Pizzas', esArmable: true },
-
-    // Pizzas Premium (Solo Mediana y Familiar)
     { 
       id: 301, 
       nombre: 'Pizza Premium Cuatro Quesos', 
@@ -67,16 +59,10 @@ let posState = {
       desc: 'Maíz, Tocineta, Pollo Desmechado y Champiñones',
       precios: { mediana: 40000, familiar: 55000 }
     },
-
-    // Arepas
     { id: 201, nombre: 'Arepa Queso', precio: 8000, categoria: 'Arepas' },
     { id: 202, nombre: 'Arepa Mixta', precio: 14000, categoria: 'Arepas' },
-
-    // Patacones
     { id: 401, nombre: 'Patacón con Carne', precio: 16000, categoria: 'Patacones' },
     { id: 402, nombre: 'Patacón Mixto', precio: 20000, categoria: 'Patacones' },
-
-    // Panadería
     { id: 101, nombre: 'Pan de Jamón', precio: 35000, categoria: 'Panadería' },
     { id: 102, nombre: 'Tequeños (6 und)', precio: 12000, categoria: 'Panadería' }
   ],
@@ -97,7 +83,6 @@ function guardarEstadoPOS() {
   localStorage.setItem('chamos_pos_mesas', JSON.stringify(posState.mesas));
 }
 
-// Guardar la migración inicial si aplica
 guardarEstadoPOS();
 
 // --- SONIDO DE ALERTA ---
@@ -139,7 +124,7 @@ function renderGridMesas(container) {
 
   let html = `
     <!-- PESTAÑAS MESAS / DOMICILIOS -->
-    <div style="display:flex; gap:8px; margin-bottom:15px;">
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
       <button onclick="cambiarTabGrid('mesas')" style="flex:1; padding:10px; border-radius:8px; font-weight:bold; border:none; cursor:pointer; background:${esMesas ? '#ea580c' : '#e2e8f0'}; color:${esMesas ? '#fff' : '#475569'};">
         🍽️ Mesas
       </button>
@@ -147,9 +132,18 @@ function renderGridMesas(container) {
         🛵 Domicilios
       </button>
     </div>
-
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
   `;
+
+  // BOTÓN DE AGREGAR DOMICILIO SI ESTÁ EN LA PESTAÑA DOMICILIOS
+  if (!esMesas) {
+    html += `
+      <button onclick="abrirModalNuevoDomicilio()" class="btn-primary" style="margin-bottom:15px; background:#0284c7; margin-top:0;">
+        ➕ Nuevo Domicilio
+      </button>
+    `;
+  }
+
+  html += `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">`;
 
   if (filtradas.length === 0) {
     html += `<p style="grid-column: span 2; font-size:0.85rem; color:#94a3b8; text-align:center;">No hay registros en esta sección.</p>`;
@@ -161,14 +155,22 @@ function renderGridMesas(container) {
       const txtColor = m.estado === 'ocupada' ? '#dc2626' : '#16a34a';
 
       html += `
-        <div class="inner-card" onclick="seleccionarMesa(${m.id})" style="background:${bg}; border: 2px solid ${border}; cursor:pointer; margin:0;">
-          <div style="font-weight:bold; font-size:1rem; color:#1e293b;">${m.nombre}</div>
-          <div style="font-size:0.75rem; color:${txtColor}; font-weight:bold; margin-top:4px;">
-            ${m.estado === 'ocupada' ? '🔴 Ocupada' : '🟢 Libre'}
+        <div class="inner-card" style="background:${bg}; border: 2px solid ${border}; margin:0; position:relative;">
+          <div onclick="seleccionarMesa(${m.id})" style="cursor:pointer;">
+            <div style="font-weight:bold; font-size:0.95rem; color:#1e293b;">${m.nombre}</div>
+            ${m.direccion ? `<div style="font-size:0.75rem; color:#475569; margin-top:2px;">📍 ${m.direccion}</div>` : ''}
+            <div style="font-size:0.75rem; color:${txtColor}; font-weight:bold; margin-top:4px;">
+              ${m.estado === 'ocupada' ? '🔴 En Proceso' : '🟢 Libre'}
+            </div>
+            <div style="font-size:0.9rem; font-weight:bold; color:#0f172a; margin-top:6px;">
+              Total: $${total.toLocaleString()}
+            </div>
           </div>
-          <div style="font-size:0.85rem; font-weight:bold; color:#0f172a; margin-top:8px;">
-            $${total.toLocaleString()}
-          </div>
+          ${!esMesas ? `
+            <button onclick="marcarEntregado(${m.id})" style="width:100%; margin-top:8px; padding:6px; background:#22c55e; color:white; border:none; border-radius:6px; font-weight:bold; font-size:0.75rem; cursor:pointer;">
+              🚚 Entregado
+            </button>
+          ` : ''}
         </div>
       `;
     });
@@ -193,6 +195,73 @@ function volverAMesas() {
   renderPOS();
 }
 
+// --- AGREGAR NUEVO DOMICILIO ---
+function abrirModalNuevoDomicilio() {
+  const modal = document.createElement('div');
+  modal.id = 'pos-modal-domicilio';
+  modal.style = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
+
+  modal.innerHTML = `
+    <div style="background:white; padding:18px; border-radius:12px; width:88%; max-width:330px;">
+      <h4 style="margin-bottom:10px; color:#0284c7;">🛵 Crear Nuevo Domicilio</h4>
+      
+      <p style="font-size:0.75rem; font-weight:bold; color:#475569; margin-bottom:4px;">Nombre del Cliente:</p>
+      <input type="text" id="dom-nombre" placeholder="Ej: Carlos Pérez" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; margin-bottom:10px;">
+
+      <p style="font-size:0.75rem; font-weight:bold; color:#475569; margin-bottom:4px;">Dirección de Entrega:</p>
+      <input type="text" id="dom-direccion" placeholder="Ej: Cra 9 #12-34 Barrio Centro" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; margin-bottom:12px;">
+
+      <div style="display:flex; gap:8px;">
+        <button onclick="cerrarModalDomicilio()" class="btn-secondary" style="margin-top:0;">Cancelar</button>
+        <button onclick="confirmarNuevoDomicilio()" class="btn-primary" style="margin-top:0; background:#0284c7;">Crear Pedido</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function cerrarModalDomicilio() {
+  const modal = document.getElementById('pos-modal-domicilio');
+  if (modal) modal.remove();
+}
+
+function confirmarNuevoDomicilio() {
+  const nombre = document.getElementById('dom-nombre').value.trim();
+  const direccion = document.getElementById('dom-direccion').value.trim();
+
+  if (!nombre) {
+    alert("⚠️ Ingrese el nombre del cliente.");
+    return;
+  }
+
+  const nuevoId = Date.now();
+  const nuevoDom = {
+    id: nuevoId,
+    nombre: `Dom: ${nombre}`,
+    direccion: direccion || 'Sin dirección',
+    tipo: 'domicilio',
+    estado: 'libre',
+    pedido: []
+  };
+
+  posState.mesas.push(nuevoDom);
+  guardarEstadoPOS();
+  cerrarModalDomicilio();
+
+  // Abrir comanda inmediatamente para armar el pedido
+  posState.mesaSeleccionada = nuevoId;
+  renderPOS();
+}
+
+function marcarEntregado(id) {
+  if (confirm("¿Confirmar que el pedido fue entregado por el mensajero?")) {
+    posState.mesas = posState.mesas.filter(m => m.id !== id);
+    guardarEstadoPOS();
+    renderPOS();
+  }
+}
+
 // --- DETALLE DE LA MESA Y PEDIDOS ---
 function renderDetalleMesa(container) {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
@@ -203,7 +272,10 @@ function renderDetalleMesa(container) {
     <button class="btn-secondary" onclick="volverAMesas()" style="margin-bottom:10px; width:auto;">← Volver</button>
     <div class="inner-card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h4>📋 Comanda: ${mesa.nombre}</h4>
+        <div>
+          <h4 style="margin:0;">📋 ${mesa.nombre}</h4>
+          ${mesa.direccion ? `<small style="color:#64748b;">📍 ${mesa.direccion}</small>` : ''}
+        </div>
         <span style="font-weight:bold; color:#ea580c; font-size:1.1rem;">$${total.toLocaleString()}</span>
       </div>
     </div>
@@ -517,7 +589,7 @@ function cambiarCantItem(index, delta) {
   renderPOS();
 }
 
-// --- ACCIÓN COMANDAR CON REGRESO AUTOMÁTICO A MESAS ---
+// --- ACCIÓN COMANDAR CON REGRESO AUTOMÁTICO ---
 function confirmarComanda() {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
   if (!mesa || mesa.pedido.length === 0) {
@@ -535,7 +607,7 @@ function confirmarComanda() {
 function imprimirTicketMesa() {
   const mesa = posState.mesas.find(m => m.id === posState.mesaSeleccionada);
   if (!mesa || mesa.pedido.length === 0) {
-    alert("⚠️ La mesa no tiene consumo para imprimir.");
+    alert("⚠️ No hay consumo registrado para imprimir.");
     return;
   }
 
@@ -558,6 +630,7 @@ function imprimirTicketMesa() {
         <div class="center">
           <strong>LOS CHAMOS</strong><br>
           ${mesa.nombre}<br>
+          ${mesa.direccion ? `Dir: ${mesa.direccion}<br>` : ''}
           ${new Date().toLocaleString()}<br>
         </div>
         <hr>
