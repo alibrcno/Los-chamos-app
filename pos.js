@@ -17,9 +17,23 @@ let mesaActiva = null;
 let vistaActual = 'mesas'; // 'mesas' o 'domicilios'
 let categoriaSeleccionada = 'Pizzas';
 
-const OPCIONES_PIZZAS = {
-  clasica: { nombre: 'Pizza Clásica', tamanos: { Personal: 15000, Mediana: 28000, Familiar: 38000 }, gratis: 2, precioExtra: 3000 },
-  premium: { nombre: 'Pizza Premium', tamanos: { Mediana: 35000, Familiar: 45000 }, gratis: 2, precioExtra: 4000 }
+// Estado para el constructor paso a paso de Pizzas
+let pasoPizza = 1; // 1: Tipo | 2: Tamaño | 3: Ingredientes
+let pizzaEnProceso = { tipo: null, tamano: null, precioBase: 0, gratis: 2, precioExtra: 3000 };
+
+const CONFIG_PIZZAS = {
+  tradicional: {
+    nombre: 'Pizza Tradicional',
+    tamanos: { Personal: 15000, Mediana: 28000, Familiar: 38000 },
+    gratis: 2,
+    precioExtra: 3000
+  },
+  premium: {
+    nombre: 'Pizza Premium',
+    tamanos: { Mediana: 35000, Familiar: 45000 },
+    gratis: 2,
+    precioExtra: 4000
+  }
 };
 
 const INGREDIENTES = ['Jamón', 'Queso', 'Tocineta', 'Champiñones', 'Maíz', 'Piña', 'Pollo', 'Pepperoni'];
@@ -44,7 +58,7 @@ function renderPOS() {
   }
 }
 
-// 1. BARRA NAVEGACIÓN VISTA (MESAS / DOMICILIOS)
+// BARRA NAVEGACIÓN (MESAS / DOMICILIOS)
 function renderBarraModos() {
   const countDom = window.db.domiciliosPOS.length;
   return `
@@ -59,7 +73,7 @@ function renderBarraModos() {
   `;
 }
 
-// 2. VISTA CUADRÍCULA DE MESAS
+// 1. CUADRÍCULA DE MESAS
 function renderVistaMesasGrid(container) {
   const nombresMesas = Object.keys(window.db.mesasPOS);
 
@@ -85,46 +99,7 @@ function renderVistaMesasGrid(container) {
   `;
 }
 
-// 3. VISTA DOMICILIOS ESTILO VINAPP
-function renderVistaDomicilios(container) {
-  container.innerHTML = `
-    ${renderBarraModos()}
-    <div class="inner-card" style="padding: 10px; margin-bottom: 12px; background: #eff6ff; border: 1px solid #bfdbfe;">
-      <h4 style="margin-bottom: 8px; color: #1e40af; font-size: 0.9rem;">➕ Nuevo Domicilio</h4>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-        <input type="text" id="dom-cliente" placeholder="Nombre del Cliente" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
-        <input type="text" id="dom-direccion" placeholder="Dirección de Envío" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
-      </div>
-      <input type="text" id="dom-pedido" placeholder="Resumen del pedido (ej: 1 Pizza Fam + 1 Refresco)" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; margin-bottom: 6px; box-sizing: border-box;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-        <input type="number" id="dom-monto" placeholder="Monto a Pagar ($)" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
-        <button class="btn-primary" onclick="crearDomicilio()" style="margin: 0; padding: 6px; font-size: 0.8rem;">+ Registrar Domicilio</button>
-      </div>
-    </div>
-
-    <h4 style="margin-bottom: 8px; font-size: 0.9rem;">🛵 Envíos en Curso</h4>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-      ${window.db.domiciliosPOS.length === 0 ? '<p style="font-size:0.8rem; color:#94a3b8;">No hay domicilios pendientes</p>' : ''}
-      ${window.db.domiciliosPOS.map((dom, index) => `
-        <div style="background: white; border: 2px solid #3b82f6; border-radius: 10px; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
-            <span>👤 ${dom.cliente}</span>
-            <span style="color: #2563eb;">$${dom.monto.toLocaleString()}</span>
-          </div>
-          <p style="font-size: 0.75rem; color: #475569; margin: 6px 0;">📍 <strong>Dirección:</strong> ${dom.direccion}</p>
-          <p style="font-size: 0.75rem; color: #334155; margin: 6px 0; background: #f8fafc; padding: 4px; border-radius: 4px;">📋 ${dom.pedido}</p>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px;">
-            <button class="btn-secondary" onclick="imprimirTicketGenerico('DOMICILIO: ${dom.cliente}', [{'nombre': dom.pedido, 'precioTotal': dom.monto}], ${dom.monto})" style="padding: 4px; font-size: 0.7rem;">🖨️ Ticket</button>
-            <button class="btn-primary" onclick="cobrarDomicilio(${index}, 'Efectivo')" style="background: #16a34a; padding: 4px; font-size: 0.7rem; margin:0;">✅ Entregado</button>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-// 4. VISTA COMANDA MESA (CON OPCIONES DE IMPRESIÓN Y ALERTA CENTRAL)
+// 2. VISTA COMANDA MESA CON FLUJO PASO A PASO
 function renderVistaMesaDetalle(container) {
   const comanda = window.db.mesasPOS[mesaActiva] || [];
   const totalMesa = comanda.reduce((acc, item) => acc + item.precioTotal, 0);
@@ -135,23 +110,25 @@ function renderVistaMesaDetalle(container) {
       <h3 style="margin: 0; font-size: 1.1rem;">Mesa: <span style="color: var(--primary);">${mesaActiva}</span></h3>
     </div>
 
-    <!-- PESTAÑAS CATEGORÍAS MENU -->
+    <!-- BOTONES DE CATEGORÍAS -->
     <div style="display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto;">
       ${['Pizzas', 'Arepas', 'Perros', 'Patacones'].map(cat => `
-        <button onclick="cambiarCategoria('${cat}')" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 0.8rem; background: ${categoriaSeleccionada === cat ? 'var(--primary)' : '#ffffff'}; color: ${categoriaSeleccionada === cat ? '#ffffff' : '#334155'};">${cat}</button>
+        <button onclick="cambiarCategoria('${cat}')" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 0.85rem; background: ${categoriaSeleccionada === cat ? 'var(--primary)' : '#ffffff'}; color: ${categoriaSeleccionada === cat ? '#ffffff' : '#334155'}; cursor: pointer;">
+          ${cat}
+        </button>
       `).join('')}
     </div>
 
-    <div class="inner-card" style="padding: 10px; margin-bottom: 10px; background: #fff7ed; border: 1px solid #ffedd5;">
-      ${renderFormularioCategoria()}
+    <!-- PANEL DINÁMICO DE PRODUCTOS / PASOS PIZZA -->
+    <div class="inner-card" style="padding: 12px; margin-bottom: 10px; background: #fff7ed; border: 1px solid #ffedd5;">
+      ${renderContenidoCategoria()}
     </div>
 
-    <!-- COMANDA ACTUAL Y BOTONES DE ACCIÓN -->
+    <!-- COMANDA Y ACCIONES -->
     <div class="inner-card" style="padding: 10px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h4 style="margin: 0; color: #475569; font-size: 0.9rem;">Comanda Actual</h4>
-        <!-- BOTÓN ENVIAR COMANDA + ALERTA CENTRAL -->
-        <button onclick="enviarComandaCocina()" style="background: #eab308; color: black; border: none; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
+        <button onclick="enviarComandaCocina()" style="background: #eab308; color: black; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
           🔔 Enviar Comanda
         </button>
       </div>
@@ -180,7 +157,6 @@ function renderVistaMesaDetalle(container) {
         <span style="color: var(--primary);">$${totalMesa.toLocaleString()}</span>
       </div>
 
-      <!-- BOTÓN IMPRIMIR PRE-CUENTA -->
       <button class="btn-secondary" onclick="imprimirPrecuenta()" style="width: 100%; padding: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; background: #f1f5f9;">
         📄 Imprimir Pre-Cuenta (Para la Mesa)
       </button>
@@ -193,79 +169,124 @@ function renderVistaMesaDetalle(container) {
       </div>
     </div>
   `;
-
-  if (categoriaSeleccionada === 'Pizzas') actualizarOpcionesPizza();
 }
 
-function renderFormularioCategoria() {
-  if (categoriaSeleccionada === 'Pizzas') {
+// FORMULARIO INTERACTIVO (PASO A PASO PIZZA VS OTROS)
+function renderContenidoCategoria() {
+  if (categoriaSeleccionada !== 'Pizzas') {
+    const productosCat = CATALOGO_OTROS.filter(p => p.categoria === categoriaSeleccionada);
     return `
-      <h4 style="margin-bottom: 6px; color: #c2410c; font-size: 0.85rem;">🍕 Armar Pizza</h4>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-        <select id="pz-tipo" onchange="actualizarOpcionesPizza()" style="padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
-          <option value="clasica">Pizza Clásica</option>
-          <option value="premium">Pizza Premium</option>
-        </select>
-        <select id="pz-tamano" style="padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;"></select>
+      <h4 style="margin-bottom: 8px; color: #c2410c; font-size: 0.85rem;">🍔 Categoría ${categoriaSeleccionada}</h4>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px;">
+        ${productosCat.map(p => `
+          <div class="daily-row" style="background: white; padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <span style="font-size: 0.8rem; font-weight: bold;">${p.nombre} - $${p.precio.toLocaleString()}</span>
+            <button class="btn-primary" onclick="agregarOtrosMesa(${p.id})" style="width: auto; padding: 4px 8px; margin: 0; font-size: 0.7rem;">+ Añadir</button>
+          </div>
+        `).join('')}
       </div>
+      <input type="text" id="item-obs-otros" placeholder="Observaciones..." style="width: 100%; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; box-sizing: border-box;">
+    `;
+  }
+
+  // PASO 1: SELECCIONAR TIPO DE PIZZA
+  if (pasoPizza === 1) {
+    return `
+      <h4 style="margin-bottom: 8px; color: #c2410c; font-size: 0.9rem;">🍕 Paso 1: Selecciona el Tipo de Pizza</h4>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button onclick="seleccionarTipoPizza('tradicional')" style="padding: 12px; border-radius: 8px; border: 2px solid #ea580c; background: white; font-weight: bold; cursor: pointer; color: #c2410c;">
+          🍕 Tradicional<br><small style="font-weight: normal; color: #64748b;">Desde $15.000</small>
+        </button>
+        <button onclick="seleccionarTipoPizza('premium')" style="padding: 12px; border-radius: 8px; border: 2px solid #ea580c; background: white; font-weight: bold; cursor: pointer; color: #c2410c;">
+          ⭐ Premium<br><small style="font-weight: normal; color: #64748b;">Desde $35.000</small>
+        </button>
+      </div>
+    `;
+  }
+
+  // PASO 2: SELECCIONAR TAMAÑO
+  if (pasoPizza === 2) {
+    const config = CONFIG_PIZZAS[pizzaEnProceso.tipo];
+    return `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4 style="margin: 0; color: #c2410c; font-size: 0.85rem;">🍕 Paso 2: Tamaño (${config.nombre})</h4>
+        <button class="btn-secondary" onclick="pasoPizza=1; renderPOS();" style="width: auto; padding: 2px 6px; font-size: 0.7rem;">← Cambiar Tipo</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px;">
+        ${Object.keys(config.tamanos).map(t => `
+          <button onclick="seleccionarTamanoPizza('${t}', ${config.tamanos[t]})" style="padding: 10px 4px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-weight: bold; cursor: pointer; text-align: center; font-size: 0.8rem;">
+            ${t}<br><span style="color: #2563eb;">$${config.tamanos[t].toLocaleString()}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // PASO 3: INGREDIENTES Y OBSERVACIONES
+  if (pasoPizza === 3) {
+    return `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <h4 style="margin: 0; color: #c2410c; font-size: 0.85rem;">🍕 Paso 3: Ingredientes (${pizzaEnProceso.tamano})</h4>
+        <button class="btn-secondary" onclick="pasoPizza=2; renderPOS();" style="width: auto; padding: 2px 6px; font-size: 0.7rem;">← Tamaño</button>
+      </div>
+      <small style="display: block; color: #64748b; font-size: 0.7rem; margin-bottom: 6px;">2 Ingredientes Gratis (Adicional +$${pizzaEnProceso.precioExtra.toLocaleString()})</small>
+      
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 6px;">
         ${INGREDIENTES.map(ing => `
-          <label style="font-size: 0.7rem; display: flex; align-items: center; gap: 4px; background: white; padding: 2px 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
+          <label style="font-size: 0.7rem; display: flex; align-items: center; gap: 4px; background: white; padding: 3px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
             <input type="checkbox" name="ing-check" value="${ing}"> ${ing}
           </label>
         `).join('')}
       </div>
-      <input type="text" id="item-obs" placeholder="Observaciones..." style="width: 100%; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; margin-bottom: 6px; box-sizing: border-box;">
-      <button class="btn-primary" onclick="agregarPizzaMesa()" style="margin: 0; padding: 6px; font-size: 0.75rem;">+ Agregar Pizza</button>
+
+      <input type="text" id="item-obs" placeholder="Observaciones (ej: Bien tostada)..." style="width: 100%; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; margin-bottom: 6px; box-sizing: border-box;">
+      <button class="btn-primary" onclick="confirmarAgregarPizza()" style="margin: 0; padding: 6px; font-size: 0.8rem;">+ Agregar a la Comanda</button>
     `;
   }
-
-  const productosCat = CATALOGO_OTROS.filter(p => p.categoria === categoriaSeleccionada);
-  return `
-    <h4 style="margin-bottom: 6px; color: #c2410c; font-size: 0.85rem;">🍔 ${categoriaSeleccionada}</h4>
-    <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;">
-      ${productosCat.map(p => `
-        <div class="daily-row" style="background: white; padding: 4px 6px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <span style="font-size: 0.8rem;">${p.nombre} - $${p.precio.toLocaleString()}</span>
-          <button class="btn-primary" onclick="agregarOtrosMesa(${p.id})" style="width: auto; padding: 2px 6px; margin: 0; font-size: 0.7rem;">+ Añadir</button>
-        </div>
-      `).join('')}
-    </div>
-    <input type="text" id="item-obs-otros" placeholder="Observaciones..." style="width: 100%; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; box-sizing: border-box;">
-  `;
 }
 
-// --- ACCIONES Y NAVEGACIÓN ---
-function cambiarVista(vista) { vistaActual = vista; mesaActiva = null; renderPOS(); }
-function abrirMesa(nombre) { mesaActiva = nombre; renderPOS(); }
-function cerrarMesa() { mesaActiva = null; renderPOS(); }
-function cambiarCategoria(cat) { categoriaSeleccionada = cat; renderPOS(); }
-
-function actualizarOpcionesPizza() {
-  const selectTipo = document.getElementById('pz-tipo');
-  const selectTamano = document.getElementById('pz-tamano');
-  if (!selectTipo || !selectTamano) return;
-  const config = OPCIONES_PIZZAS[selectTipo.value];
-  selectTamano.innerHTML = Object.keys(config.tamanos).map(t => `<option value="${t}">${t} - $${config.tamanos[t].toLocaleString()}</option>`).join('');
-}
-
-function agregarPizzaMesa() {
-  const tipoKey = document.getElementById('pz-tipo').value;
-  const tamano = document.getElementById('pz-tamano').value;
-  const obs = document.getElementById('item-obs').value.trim();
-  const config = OPCIONES_PIZZAS[tipoKey];
-  const precioBase = config.tamanos[tamano];
-  const ingSeleccionados = Array.from(document.querySelectorAll('input[name="ing-check"]:checked')).map(el => el.value);
-
-  const adicionalesCount = Math.max(0, ingSeleccionados.length - config.gratis);
-  const costoAdicionales = adicionalesCount * config.precioExtra;
-
-  window.db.mesasPOS[mesaActiva].push({
-    categoria: 'Pizzas', nombre: config.nombre, tamano: tamano,
-    ingredientes: ingSeleccionados, obs: obs, precioTotal: precioBase + costoAdicionales
-  });
+// LOGICA DE NAVEGACIÓN PASO A PASO PIZZAS
+function seleccionarTipoPizza(tipo) {
+  const config = CONFIG_PIZZAS[tipo];
+  pizzaEnProceso = { tipo: tipo, tamano: null, precioBase: 0, gratis: config.gratis, precioExtra: config.precioExtra };
+  pasoPizza = 2;
   renderPOS();
 }
+
+function seleccionarTamanoPizza(tamano, precioBase) {
+  pizzaEnProceso.tamano = tamano;
+  pizzaEnProceso.precioBase = precioBase;
+  pasoPizza = 3;
+  renderPOS();
+}
+
+function confirmarAgregarPizza() {
+  const config = CONFIG_PIZZAS[pizzaEnProceso.tipo];
+  const obs = document.getElementById('item-obs').value.trim();
+  const ingSeleccionados = Array.from(document.querySelectorAll('input[name="ing-check"]:checked')).map(el => el.value);
+
+  const adicionalesCount = Math.max(0, ingSeleccionados.length - pizzaEnProceso.gratis);
+  const costoAdicionales = adicionalesCount * pizzaEnProceso.precioExtra;
+
+  window.db.mesasPOS[mesaActiva].push({
+    categoria: 'Pizzas',
+    nombre: config.nombre,
+    tamano: pizzaEnProceso.tamano,
+    ingredientes: ingSeleccionados,
+    obs: obs,
+    precioTotal: pizzaEnProceso.precioBase + costoAdicionales
+  });
+
+  // Reiniciar flujo a Paso 1 para armar otra pizza
+  pasoPizza = 1;
+  renderPOS();
+}
+
+// ACCIONES GENERALES
+function cambiarVista(vista) { vistaActual = vista; mesaActiva = null; renderPOS(); }
+function abrirMesa(nombre) { mesaActiva = nombre; pasoPizza = 1; renderPOS(); }
+function cerrarMesa() { mesaActiva = null; renderPOS(); }
+function cambiarCategoria(cat) { categoriaSeleccionada = cat; pasoPizza = 1; renderPOS(); }
 
 function agregarOtrosMesa(idProd) {
   const prod = CATALOGO_OTROS.find(p => p.id === idProd);
@@ -282,44 +303,22 @@ function eliminarItemMesa(index) {
   renderPOS();
 }
 
-// --- MANEJO DE DOMICILIOS ---
-function crearDomicilio() {
-  const cliente = document.getElementById('dom-cliente').value.trim();
-  const direccion = document.getElementById('dom-direccion').value.trim();
-  const pedido = document.getElementById('dom-pedido').value.trim();
-  const monto = parseFloat(document.getElementById('dom-monto').value);
-
-  if (!cliente || !direccion || !pedido || isNaN(monto)) {
-    alert("⚠️ Completa todos los campos del domicilio.");
-    return;
-  }
-
-  window.db.domiciliosPOS.push({ cliente, direccion, pedido, monto });
-  renderPOS();
-}
-
-function cobrarDomicilio(index, metodoPago) {
-  const dom = window.db.domiciliosPOS[index];
-  registrarIngresoVenta(dom.monto, metodoPago, 'Domicilios');
-  window.db.domiciliosPOS.splice(index, 1);
-  if (typeof guardarBD === 'function') guardarBD();
-  alert(`✅ Domicilio de ${dom.cliente} cobrado y completado.`);
-  renderPOS();
-}
-
-// --- IMPRESIÓN, ALERTA AL SERVIDOR Y COBRO DE MESA ---
+// ENVIAR COMANDA Y VOLVER A VISTA MESAS PRINCIPAL
 function enviarComandaCocina() {
   const comanda = window.db.mesasPOS[mesaActiva] || [];
   if (comanda.length === 0) return alert("⚠️ La comanda está vacía.");
 
-  // 1. Alerta evento JS para servidor central o plugin de impresión
+  // Disparar evento para servidor / impresoras
   const event = new CustomEvent('alertaCentralPOS', {
     detail: { tipo: 'COMANDA_COCINA', origen: mesaActiva, items: comanda, fecha: new Date() }
   });
   window.dispatchEvent(event);
 
-  // 2. Disparar impresión de ticket de comanda
+  // Imprimir comanda
   imprimirTicketGenerico(`COMANDA - ${mesaActiva}`, comanda, 0, true);
+
+  // Volver al panel de selección de mesas
+  cerrarMesa();
 }
 
 function imprimirPrecuenta() {
@@ -334,18 +333,14 @@ function cobrarMesa(metodoPago) {
   if (comanda.length === 0) return alert("⚠️ No hay productos en la mesa.");
 
   const totalVenta = comanda.reduce((acc, i) => acc + i.precioTotal, 0);
+  imprimirTicketGenerico(`FACTURA - ${mesaActiva}`, comanda, totalVenta);
 
-  // Imprimir Ticket Final
-  imprimirTicketGenerico(`FACTURA / CUENTA - ${mesaActiva}`, comanda, totalVenta);
-
-  // Registrar venta
   comanda.forEach(item => {
     const cat = item.categoria || 'Otros';
     window.db.ventasPorCategoria[cat] = (window.db.ventasPorCategoria[cat] || 0) + item.precioTotal;
   });
 
   registrarIngresoVenta(totalVenta, metodoPago, 'Mesa');
-
   window.db.mesasPOS[mesaActiva] = [];
   if (typeof guardarBD === 'function') guardarBD();
   alert(`✅ ${mesaActiva} cobrada con éxito ($${totalVenta.toLocaleString()} en ${metodoPago})`);
@@ -368,7 +363,7 @@ function registrarIngresoVenta(monto, metodoPago, origen) {
   movHoy.ingresos[metodoPago] = (movHoy.ingresos[metodoPago] || 0) + monto;
 }
 
-// MOTOR DE IMPRESIÓN (VENTANA POPUP / IMPRESORA TÉRMICA)
+// MOTOR DE IMPRESIÓN TICKET
 function imprimirTicketGenerico(titulo, items, total, esCocina = false) {
   const ventanaImp = window.open('', '_blank', 'width=300,height=500');
   ventanaImp.document.write(`
@@ -397,12 +392,7 @@ function imprimirTicketGenerico(titulo, items, total, esCocina = false) {
           </div>
           <div class="line"></div>
         `).join('')}
-        ${!esCocina ? `
-          <div class="row bold" style="font-size: 14px;">
-            <span>TOTAL:</span>
-            <span>$${total.toLocaleString()}</span>
-          </div>
-        ` : ''}
+        ${!esCocina ? `<div class="row bold" style="font-size: 14px;"><span>TOTAL:</span><span>$${total.toLocaleString()}</span></div>` : ''}
         <div class="center" style="margin-top: 15px;">*** GRACIAS ***</div>
       </body>
     </html>
@@ -411,4 +401,63 @@ function imprimirTicketGenerico(titulo, items, total, esCocina = false) {
   ventanaImp.focus();
   ventanaImp.print();
   ventanaImp.close();
+}
+
+// DOMICILIOS
+function renderVistaDomicilios(container) {
+  container.innerHTML = `
+    ${renderBarraModos()}
+    <div class="inner-card" style="padding: 10px; margin-bottom: 12px; background: #eff6ff; border: 1px solid #bfdbfe;">
+      <h4 style="margin-bottom: 8px; color: #1e40af; font-size: 0.9rem;">➕ Nuevo Domicilio</h4>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+        <input type="text" id="dom-cliente" placeholder="Nombre Cliente" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
+        <input type="text" id="dom-direccion" placeholder="Dirección Envío" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
+      </div>
+      <input type="text" id="dom-pedido" placeholder="Resumen del pedido..." style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem; margin-bottom: 6px; box-sizing: border-box;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <input type="number" id="dom-monto" placeholder="Monto a Pagar ($)" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
+        <button class="btn-primary" onclick="crearDomicilio()" style="margin: 0; padding: 6px; font-size: 0.8rem;">+ Registrar Domicilio</button>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom: 8px; font-size: 0.9rem;">🛵 Envíos en Curso</h4>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+      ${window.db.domiciliosPOS.length === 0 ? '<p style="font-size:0.8rem; color:#94a3b8;">No hay domicilios pendientes</p>' : ''}
+      ${window.db.domiciliosPOS.map((dom, index) => `
+        <div style="background: white; border: 2px solid #3b82f6; border-radius: 10px; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+            <span>👤 ${dom.cliente}</span>
+            <span style="color: #2563eb;">$${dom.monto.toLocaleString()}</span>
+          </div>
+          <p style="font-size: 0.75rem; color: #475569; margin: 6px 0;">📍 <strong>Dirección:</strong> ${dom.direccion}</p>
+          <p style="font-size: 0.75rem; color: #334155; margin: 6px 0; background: #f8fafc; padding: 4px; border-radius: 4px;">📋 ${dom.pedido}</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px;">
+            <button class="btn-secondary" onclick="imprimirTicketGenerico('DOMICILIO: ${dom.cliente}', [{'nombre': dom.pedido, 'precioTotal': dom.monto}], ${dom.monto})" style="padding: 4px; font-size: 0.7rem;">🖨️ Ticket</button>
+            <button class="btn-primary" onclick="cobrarDomicilio(${index}, 'Efectivo')" style="background: #16a34a; padding: 4px; font-size: 0.7rem; margin:0;">✅ Entregado</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function crearDomicilio() {
+  const cliente = document.getElementById('dom-cliente').value.trim();
+  const direccion = document.getElementById('dom-direccion').value.trim();
+  const pedido = document.getElementById('dom-pedido').value.trim();
+  const monto = parseFloat(document.getElementById('dom-monto').value);
+
+  if (!cliente || !direccion || !pedido || isNaN(monto)) return alert("⚠️ Completa los campos del domicilio.");
+
+  window.db.domiciliosPOS.push({ cliente, direccion, pedido, monto });
+  renderPOS();
+}
+
+function cobrarDomicilio(index, metodoPago) {
+  const dom = window.db.domiciliosPOS[index];
+  registrarIngresoVenta(dom.monto, metodoPago, 'Domicilios');
+  window.db.domiciliosPOS.splice(index, 1);
+  if (typeof guardarBD === 'function') guardarBD();
+  alert(`✅ Domicilio de ${dom.cliente} cobrado.`);
+  renderPOS();
 }
