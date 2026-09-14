@@ -8,7 +8,14 @@ if (!window.db.mesasPOS) {
   };
 }
 
-let mesaActiva = null; // null abre la vista de cuadrícula de mesas
+if (!window.db.ventasPorCategoria) {
+  window.db.ventasPorCategoria = {
+    Pizzas: 0, Arepas: 0, Perros: 0, Patacones: 0, Otros: 0
+  };
+}
+
+let mesaActiva = null; 
+let categoriaSeleccionada = 'Pizzas';
 
 const OPCIONES_PIZZAS = {
   clasica: {
@@ -27,6 +34,16 @@ const OPCIONES_PIZZAS = {
 
 const INGREDIENTES = ['Jamón', 'Queso', 'Tocineta', 'Champiñones', 'Maíz', 'Piña', 'Pollo', 'Pepperoni'];
 
+const CATALOGO_OTROS = [
+  { id: 101, categoria: 'Arepas', nombre: 'Arepa Mixta', precio: 14000 },
+  { id: 102, categoria: 'Arepas', nombre: 'Arepa de Carne Desmechada', precio: 15000 },
+  { id: 103, categoria: 'Arepas', nombre: 'Arepa de Pollo y Queso', precio: 13000 },
+  { id: 201, categoria: 'Perros', nombre: 'Perro Sencillo', precio: 10000 },
+  { id: 202, categoria: 'Perros', nombre: 'Perro Especial (Tocineta/Queso)', precio: 14000 },
+  { id: 301, categoria: 'Patacones', nombre: 'Patacón con Carne', precio: 18000 },
+  { id: 302, categoria: 'Patacones', nombre: 'Patacón Mixto', precio: 22000 }
+];
+
 // --- RENDERIZADO PRINCIPAL ---
 function renderPOS() {
   const container = document.getElementById('pos-container');
@@ -39,7 +56,7 @@ function renderPOS() {
   }
 }
 
-// 1. VISTA CUADRÍCULA DE MESAS (Estilo de la imagen)
+// 1. VISTA CUADRÍCULA DE MESAS
 function renderVistaMesasGrid(container) {
   const nombresMesas = Object.keys(window.db.mesasPOS);
 
@@ -91,10 +108,12 @@ function renderVistaMesasGrid(container) {
   `;
 }
 
-// 2. VISTA DE DETALLE / COMANDA DE LA MESA
+// 2. VISTA COMANDA Y MENÚ POR CATEGORÍAS
 function renderVistaMesaDetalle(container) {
   const comanda = window.db.mesasPOS[mesaActiva] || [];
   const totalMesa = comanda.reduce((acc, item) => acc + item.precioTotal, 0);
+
+  const categorias = ['Pizzas', 'Arepas', 'Perros', 'Patacones'];
 
   container.innerHTML = `
     <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
@@ -102,36 +121,29 @@ function renderVistaMesaDetalle(container) {
       <h3 style="margin: 0; font-size: 1.1rem;">Mesa: <span style="color: var(--primary);">${mesaActiva}</span></h3>
     </div>
 
-    <!-- SECTOR ARMAR PIZZA -->
-    <div class="inner-card" style="padding: 10px; margin-bottom: 10px; background: #fff7ed; border: 1px solid #ffedd5;">
-      <h4 style="margin-bottom: 8px; color: #c2410c; font-size: 0.9rem;">🍕 Armar Pizza</h4>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-        <select id="pz-tipo" onchange="actualizarOpcionesPizza()" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
-          <option value="clasica">Pizza Clásica</option>
-          <option value="premium">Pizza Premium</option>
-        </select>
-        <select id="pz-tamano" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;"></select>
-      </div>
-
-      <div style="font-size: 0.75rem; color: #475569; margin-bottom: 4px; font-weight: bold;">
-        Ingredientes (2 Gratis - Adicionales de pago):
-      </div>
-      
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 8px;">
-        ${INGREDIENTES.map(ing => `
-          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; background: white; padding: 4px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
-            <input type="checkbox" name="ing-check" value="${ing}"> ${ing}
-          </label>
-        `).join('')}
-      </div>
-
-      <input type="text" id="pz-obs" placeholder="Observaciones (ej: Bien tostada, sin cebolla)..." style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; margin-bottom: 8px; box-sizing: border-box;">
-
-      <button class="btn-primary" onclick="agregarPizzaMesa()" style="margin: 0; padding: 8px; font-size: 0.8rem;">+ Agregar Pizza a la Comanda</button>
+    <!-- PESTAÑAS DE CATEGORÍAS -->
+    <div style="display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 4px;">
+      ${categorias.map(cat => `
+        <button onclick="cambiarCategoria('${cat}')" style="
+          padding: 6px 12px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          font-weight: bold;
+          font-size: 0.8rem;
+          white-space: nowrap;
+          cursor: pointer;
+          background: ${categoriaSeleccionada === cat ? 'var(--primary)' : '#ffffff'};
+          color: ${categoriaSeleccionada === cat ? '#ffffff' : '#334155'};
+        ">${cat}</button>
+      `).join('')}
     </div>
 
-    <!-- COMANDA ACTUAL DE LA MESA -->
+    <!-- VISTA FORMULARIO SEGÚN CATEGORÍA -->
+    <div class="inner-card" style="padding: 10px; margin-bottom: 10px; background: #fff7ed; border: 1px solid #ffedd5;">
+      ${renderFormularioCategoria()}
+    </div>
+
+    <!-- COMANDA ACTUAL MESA -->
     <div class="inner-card" style="padding: 10px;">
       <h4 style="margin-bottom: 8px; color: #475569; font-size: 0.9rem;">Comanda Actual</h4>
       
@@ -140,8 +152,8 @@ function renderVistaMesaDetalle(container) {
         ${comanda.map((item, index) => `
           <div class="daily-row" style="padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
             <div style="line-height: 1.2;">
-              <strong style="font-size: 0.85rem;">${item.nombre} (${item.tamano})</strong><br>
-              <small style="color: #64748b; font-size: 0.7rem;">Ing: ${item.ingredientes.join(', ') || 'Sin ingredientes'}</small><br>
+              <strong style="font-size: 0.85rem;">[${item.categoria}] ${item.nombre} ${item.tamano ? `(${item.tamano})` : ''}</strong><br>
+              ${item.ingredientes && item.ingredientes.length > 0 ? `<small style="color: #64748b; font-size: 0.7rem;">Ing: ${item.ingredientes.join(', ')}</small><br>` : ''}
               ${item.obs ? `<small style="color: #d97706; font-size: 0.7rem;">📝 ${item.obs}</small>` : ''}
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -168,19 +180,58 @@ function renderVistaMesaDetalle(container) {
     </div>
   `;
 
-  actualizarOpcionesPizza();
+  if (categoriaSeleccionada === 'Pizzas') actualizarOpcionesPizza();
 }
 
-// --- LOGICA DE NEGOCIO Y EVENTOS ---
-function abrirMesa(nombre) {
-  mesaActiva = nombre;
-  renderPOS();
+// RENDERIZADOR DE FORMULARIO POR CATEGORÍA
+function renderFormularioCategoria() {
+  if (categoriaSeleccionada === 'Pizzas') {
+    return `
+      <h4 style="margin-bottom: 8px; color: #c2410c; font-size: 0.9rem;">🍕 Armar Pizza</h4>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+        <select id="pz-tipo" onchange="actualizarOpcionesPizza()" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;">
+          <option value="clasica">Pizza Clásica</option>
+          <option value="premium">Pizza Premium</option>
+        </select>
+        <select id="pz-tamano" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.8rem;"></select>
+      </div>
+
+      <div style="font-size: 0.75rem; color: #475569; margin-bottom: 4px; font-weight: bold;">Ingredientes (2 Gratis - Adicionales de pago):</div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 8px;">
+        ${INGREDIENTES.map(ing => `
+          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; background: white; padding: 4px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+            <input type="checkbox" name="ing-check" value="${ing}"> ${ing}
+          </label>
+        `).join('')}
+      </div>
+
+      <input type="text" id="item-obs" placeholder="Observaciones de la comanda..." style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; margin-bottom: 8px; box-sizing: border-box;">
+      <button class="btn-primary" onclick="agregarPizzaMesa()" style="margin: 0; padding: 8px; font-size: 0.8rem;">+ Agregar Pizza</button>
+    `;
+  }
+
+  const productosCat = CATALOGO_OTROS.filter(p => p.categoria === categoriaSeleccionada);
+  return `
+    <h4 style="margin-bottom: 8px; color: #c2410c; font-size: 0.9rem;">🍔 Categoría: ${categoriaSeleccionada}</h4>
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+      ${productosCat.map(p => `
+        <div class="daily-row" style="background: white; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div>
+            <strong style="font-size: 0.85rem;">${p.nombre}</strong><br>
+            <small style="color: #64748b;">$${p.precio.toLocaleString()}</small>
+          </div>
+          <button class="btn-primary" onclick="agregarOtrosMesa(${p.id})" style="width: auto; padding: 4px 8px; margin: 0; font-size: 0.75rem;">+ Agregar</button>
+        </div>
+      `).join('')}
+    </div>
+    <input type="text" id="item-obs-otros" placeholder="Observación para el producto..." style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; margin-bottom: 4px; box-sizing: border-box;">
+  `;
 }
 
-function cerrarMesa() {
-  mesaActiva = null;
-  renderPOS();
-}
+// --- LOGICA ACCIONES Y NAVEGACIÓN ---
+function abrirMesa(nombre) { mesaActiva = nombre; renderPOS(); }
+function cerrarMesa() { mesaActiva = null; renderPOS(); }
+function cambiarCategoria(cat) { categoriaSeleccionada = cat; renderPOS(); }
 
 function actualizarOpcionesPizza() {
   const selectTipo = document.getElementById('pz-tipo');
@@ -196,27 +247,41 @@ function actualizarOpcionesPizza() {
 function agregarPizzaMesa() {
   const tipoKey = document.getElementById('pz-tipo').value;
   const tamano = document.getElementById('pz-tamano').value;
-  const obs = document.getElementById('pz-obs').value.trim();
+  const obs = document.getElementById('item-obs').value.trim();
   
   const config = OPCIONES_PIZZAS[tipoKey];
   const precioBase = config.tamanos[tamano];
-
   const ingSeleccionados = Array.from(document.querySelectorAll('input[name="ing-check"]:checked')).map(el => el.value);
 
-  // Lógica de ingredientes extra de pago
   const adicionalesCount = Math.max(0, ingSeleccionados.length - config.gratis);
   const costoAdicionales = adicionalesCount * config.precioExtra;
-  const precioTotal = precioBase + costoAdicionales;
 
-  const item = {
+  window.db.mesasPOS[mesaActiva].push({
+    categoria: 'Pizzas',
     nombre: config.nombre,
     tamano: tamano,
     ingredientes: ingSeleccionados,
     obs: obs,
-    precioTotal: precioTotal
-  };
+    precioTotal: precioBase + costoAdicionales
+  });
 
-  window.db.mesasPOS[mesaActiva].push(item);
+  renderPOS();
+}
+
+function agregarOtrosMesa(idProd) {
+  const prod = CATALOGO_OTROS.find(p => p.id === idProd);
+  if (!prod) return;
+
+  const obsInput = document.getElementById('item-obs-otros');
+  const obs = obsInput ? obsInput.value.trim() : '';
+
+  window.db.mesasPOS[mesaActiva].push({
+    categoria: prod.categoria,
+    nombre: prod.nombre,
+    obs: obs,
+    precioTotal: prod.precio
+  });
+
   renderPOS();
 }
 
@@ -235,6 +300,14 @@ function cobrarMesa(metodoPago) {
   const totalVenta = comanda.reduce((acc, i) => acc + i.precioTotal, 0);
   const hoyFecha = new Date().toLocaleDateString();
 
+  // 1. Acumular conteo y monto por Categoría para Métricas
+  if (!window.db.ventasPorCategoria) window.db.ventasPorCategoria = {};
+  comanda.forEach(item => {
+    const cat = item.categoria || 'Otros';
+    window.db.ventasPorCategoria[cat] = (window.db.ventasPorCategoria[cat] || 0) + item.precioTotal;
+  });
+
+  // 2. Acumular a Flujo de Caja
   if (!window.db.movimientos) window.db.movimientos = [];
   let movHoy = window.db.movimientos.find(m => m.fechaRaw === hoyFecha);
   if (!movHoy) {
