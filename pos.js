@@ -1,15 +1,33 @@
+// --- MESAS POR DEFECTO ---
+const MESAS_INICIALES = [
+  { id: 1, nombre: 'Mesa 1', tipo: 'mesa', estado: 'libre', pedido: [] },
+  { id: 2, nombre: 'Mesa 2', tipo: 'mesa', estado: 'libre', pedido: [] },
+  { id: 3, nombre: 'Mesa 3', tipo: 'mesa', estado: 'libre', pedido: [] },
+  { id: 4, nombre: 'Mesa 4', tipo: 'mesa', estado: 'libre', pedido: [] },
+  { id: 5, nombre: 'Barra', tipo: 'mesa', estado: 'libre', pedido: [] },
+  { id: 101, nombre: 'Domicilio 1', tipo: 'domicilio', estado: 'libre', pedido: [] },
+  { id: 102, nombre: 'Domicilio 2', tipo: 'domicilio', estado: 'libre', pedido: [] }
+];
+
+// Cargar y asegurar que cada mesa tenga asignado un tipo
+let mesasGuardadas = JSON.parse(localStorage.getItem('chamos_pos_mesas'));
+
+if (!mesasGuardadas || !Array.isArray(mesasGuardadas) || mesasGuardadas.length === 0) {
+  mesasGuardadas = MESAS_INICIALES;
+} else {
+  // Reparación automática de estructura si falta la propiedad tipo
+  mesasGuardadas = mesasGuardadas.map(m => {
+    if (!m.tipo) {
+      m.tipo = m.nombre.toLowerCase().includes('domicilio') ? 'domicilio' : 'mesa';
+    }
+    return m;
+  });
+}
+
 // --- ESTADO Y DATOS DEL POS ---
 let posState = {
   tabActivaGrid: 'mesas', // 'mesas' o 'domicilios'
-  mesas: JSON.parse(localStorage.getItem('chamos_pos_mesas')) || [
-    { id: 1, nombre: 'Mesa 1', tipo: 'mesa', estado: 'libre', pedido: [] },
-    { id: 2, nombre: 'Mesa 2', tipo: 'mesa', estado: 'libre', pedido: [] },
-    { id: 3, nombre: 'Mesa 3', tipo: 'mesa', estado: 'libre', pedido: [] },
-    { id: 4, nombre: 'Mesa 4', tipo: 'mesa', estado: 'libre', pedido: [] },
-    { id: 5, nombre: 'Barra', tipo: 'mesa', estado: 'libre', pedido: [] },
-    { id: 101, nombre: 'Domicilio 1', tipo: 'domicilio', estado: 'libre', pedido: [] },
-    { id: 102, nombre: 'Domicilio 2', tipo: 'domicilio', estado: 'libre', pedido: [] }
-  ],
+  mesas: mesasGuardadas,
   mesaSeleccionada: null,
   categoriaActiva: 'Todas',
   
@@ -79,6 +97,9 @@ function guardarEstadoPOS() {
   localStorage.setItem('chamos_pos_mesas', JSON.stringify(posState.mesas));
 }
 
+// Guardar la migración inicial si aplica
+guardarEstadoPOS();
+
 // --- SONIDO DE ALERTA ---
 function reproducirSonidoComanda() {
   try {
@@ -130,24 +151,28 @@ function renderGridMesas(container) {
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
   `;
 
-  filtradas.forEach(m => {
-    const total = m.pedido.reduce((acc, p) => acc + (p.precio * p.cant), 0);
-    const bg = m.estado === 'ocupada' ? '#fef2f2' : '#f0fdf4';
-    const border = m.estado === 'ocupada' ? '#ef4444' : '#22c55e';
-    const txtColor = m.estado === 'ocupada' ? '#dc2626' : '#16a34a';
+  if (filtradas.length === 0) {
+    html += `<p style="grid-column: span 2; font-size:0.85rem; color:#94a3b8; text-align:center;">No hay registros en esta sección.</p>`;
+  } else {
+    filtradas.forEach(m => {
+      const total = m.pedido ? m.pedido.reduce((acc, p) => acc + (p.precio * p.cant), 0) : 0;
+      const bg = m.estado === 'ocupada' ? '#fef2f2' : '#f0fdf4';
+      const border = m.estado === 'ocupada' ? '#ef4444' : '#22c55e';
+      const txtColor = m.estado === 'ocupada' ? '#dc2626' : '#16a34a';
 
-    html += `
-      <div class="inner-card" onclick="seleccionarMesa(${m.id})" style="background:${bg}; border: 2px solid ${border}; cursor:pointer; margin:0;">
-        <div style="font-weight:bold; font-size:1rem; color:#1e293b;">${m.nombre}</div>
-        <div style="font-size:0.75rem; color:${txtColor}; font-weight:bold; margin-top:4px;">
-          ${m.estado === 'ocupada' ? '🔴 Ocupada' : '🟢 Libre'}
+      html += `
+        <div class="inner-card" onclick="seleccionarMesa(${m.id})" style="background:${bg}; border: 2px solid ${border}; cursor:pointer; margin:0;">
+          <div style="font-weight:bold; font-size:1rem; color:#1e293b;">${m.nombre}</div>
+          <div style="font-size:0.75rem; color:${txtColor}; font-weight:bold; margin-top:4px;">
+            ${m.estado === 'ocupada' ? '🔴 Ocupada' : '🟢 Libre'}
+          </div>
+          <div style="font-size:0.85rem; font-weight:bold; color:#0f172a; margin-top:8px;">
+            $${total.toLocaleString()}
+          </div>
         </div>
-        <div style="font-size:0.85rem; font-weight:bold; color:#0f172a; margin-top:8px;">
-          $${total.toLocaleString()}
-        </div>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
 
   html += `</div>`;
   container.innerHTML = html;
@@ -503,7 +528,6 @@ function confirmarComanda() {
   reproducirSonidoComanda();
   alert(`🔔 ¡Comanda enviada a cocina para ${mesa.nombre}!`);
 
-  // Regresar automáticamente a la vista de Mesas/Domicilios
   posState.mesaSeleccionada = null;
   renderPOS();
 }
