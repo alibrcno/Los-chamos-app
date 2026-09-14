@@ -39,143 +39,200 @@
     .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
     .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; cursor: pointer; }
 
-    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; }
+    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-space-around; padding: 8px 0; }
     .nav-item { border: none; background: none; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; cursor: pointer; }
     .nav-item.active { color: var(--primary); font-weight: bold; }
     .nav-icon { font-size: 1.2rem; margin-bottom: 2px; }
+
+    input.input-pin { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1.2rem; text-align: center; letter-spacing: 4px; margin: 10px 0; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">Los Chamos Admin</div>
-    <span id="user-role-badge" style="font-size:0.75rem; background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:12px; font-weight:bold;">Admin</span>
-  </header>
-
-  <main class="container">
-    <!-- VISTA PRINCIPAL (HUB) -->
-    <div id="vista-hub">
-      <div class="kpi-card">
-        <div style="font-size: 0.8rem; opacity: 0.9;">Disponible en Cuentas:</div>
-        <div class="kpi-grid">
-          <div class="kpi-item">
-            <div class="kpi-title">Bancolombia</div>
-            <div class="kpi-value">$69</div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-title">Nequi</div>
-            <div class="kpi-value">$400</div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-title">Efectivo</div>
-            <div class="kpi-value">$40,498</div>
-          </div>
-          <div class="kpi-item">
-            <div class="kpi-title">Datáfono</div>
-            <div class="kpi-value">$0</div>
-          </div>
-        </div>
-      </div>
-
-      <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Módulos de Gestión</h3>
-      <div class="grid-cards">
-        
-        <!-- TARJETA DEL POS -->
-        <div class="app-card" onclick="verSubModuloAdmin('pos')">
-          <div class="card-icon icon-orange">🍽️</div>
-          <div class="card-title">Punto de Venta (POS)</div>
-          <div class="card-desc">Control de mesas, barra y tomar pedidos</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('almacen')">
-          <div class="card-icon icon-slate">📦</div>
-          <div class="card-title">Almacén Central</div>
-          <div class="card-desc">Bodega general, compras e insumos</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('finanzas')">
-          <div class="card-icon icon-green">💵</div>
-          <div class="card-title">Caja / Finanzas</div>
-          <div class="card-desc">Registrar ingresos y gastos directos</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('metricas')">
-          <div class="card-icon icon-orange">📈</div>
-          <div class="card-title">Rendimiento Mensual</div>
-          <div class="card-desc">Ventas por día y análisis de flujo</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('stock-bebidas')">
-          <div class="card-icon icon-slate">🥤</div>
-          <div class="card-title">Stock Bebidas</div>
-          <div class="card-desc">Stock sugerido y catálogo de bebidas</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('insumos')">
-          <div class="card-icon icon-purple">🍽️</div>
-          <div class="card-title">Insumos / Doblados</div>
-          <div class="card-desc">Servilletas, vasos, tenedores, etc.</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('checklist')">
-          <div class="card-icon icon-orange">📋</div>
-          <div class="card-title">Checklist Cocina</div>
-          <div class="card-desc">Tareas de preparación diarias</div>
-        </div>
-
-        <div class="app-card" onclick="verSubModuloAdmin('usuarios')">
-          <div class="card-icon icon-purple">👥</div>
-          <div class="card-title">Usuarios / PINs</div>
-          <div class="card-desc">Personal y permisos de acceso</div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- CONTENEDOR DE SUBMÓDULOS -->
-    <div id="vista-submodulo" style="display: none;">
-      <button class="btn-secondary" onclick="volverAlHub()" style="margin-bottom: 12px; width: auto;">← Volver al Hub</button>
+  <!-- PANTALLA DE LOGIN POR PIN -->
+  <div id="vista-login" class="container" style="display: flex; flex-direction: column; justify-content: center; min-height: 80vh;">
+    <div class="inner-card" style="text-align: center; padding: 25px;">
+      <h2 style="color: var(--primary); margin-bottom: 5px;">Los Chamos POS</h2>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Ingresa tu PIN de acceso</p>
       
-      <div id="pos-container" style="display: none;"></div>
-      <div id="almacen-container" style="display: none;"></div>
-      <div id="finanzas-container" style="display: none;"></div>
-      <div id="metricas-container" style="display: none;"></div>
+      <input type="password" id="input-pin-user" class="input-pin" maxlength="4" placeholder="****" autofocus>
+      <button onclick="validarAccesoPin()" class="btn-primary">Ingresar</button>
+      <div id="login-error" style="color: #ef4444; font-size: 0.75rem; margin-top: 8px; display: none;">PIN incorrecto</div>
     </div>
-  </main>
+  </div>
 
-  <nav class="bottom-nav">
-    <button class="nav-item active" onclick="volverAlHub()">
-      <span class="nav-icon">🏠</span>
-      Hub
-    </button>
-    <button class="nav-item" onclick="verSubModuloAdmin('pos')">
-      <span class="nav-icon">📋</span>
-      POS
-    </button>
-    <button class="nav-item" onclick="verSubModuloAdmin('almacen')">
-      <span class="nav-icon">📦</span>
-      Almacén
-    </button>
-    <button class="nav-item" onclick="verSubModuloAdmin('metricas')">
-      <span class="nav-icon">📊</span>
-      Métricas
-    </button>
-    <button class="nav-item" onclick="verSubModuloAdmin('finanzas')">
-      <span class="nav-icon">💵</span>
-      Finanzas
-    </button>
-  </nav>
+  <!-- PANTALLA PRINCIPAL DE LA APP -->
+  <div id="app-content" style="display: none;">
+    <header>
+      <div class="logo">Los Chamos Admin</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="user-role-badge" style="font-size:0.75rem; background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:12px; font-weight:bold;">Admin</span>
+        <button onclick="cerrarSesion()" style="border:none; background:none; font-size:0.75rem; color:#64748b; cursor:pointer;">🔒 Salir</button>
+      </div>
+    </header>
 
-  <!-- SCRIPTS DEL SISTEMA -->
+    <main class="container">
+      <!-- VISTA PRINCIPAL (HUB) -->
+      <div id="vista-hub">
+        <div class="kpi-card" id="kpi-panel-admin">
+          <div style="font-size: 0.8rem; opacity: 0.9;">Disponible en Cuentas:</div>
+          <div class="kpi-grid">
+            <div class="kpi-item">
+              <div class="kpi-title">Bancolombia</div>
+              <div class="kpi-value">$69</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-title">Nequi</div>
+              <div class="kpi-value">$400</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-title">Efectivo</div>
+              <div class="kpi-value">$40,498</div>
+            </div>
+            <div class="kpi-item">
+              <div class="kpi-title">Datáfono</div>
+              <div class="kpi-value">$0</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Módulos de Gestión</h3>
+        <div class="grid-cards">
+          
+          <!-- TARJETA DEL POS -->
+          <div class="app-card" onclick="verSubModuloAdmin('pos')">
+            <div class="card-icon icon-orange">🍽️</div>
+            <div class="card-title">Punto de Venta (POS)</div>
+            <div class="card-desc">Control de mesas, barra y tomar pedidos</div>
+          </div>
+
+          <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('almacen')">
+            <div class="card-icon icon-slate">📦</div>
+            <div class="card-title">Almacén Central</div>
+            <div class="card-desc">Bodega general, compras e insumos</div>
+          </div>
+
+          <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('finanzas')">
+            <div class="card-icon icon-green">💵</div>
+            <div class="card-title">Caja / Finanzas</div>
+            <div class="card-desc">Registrar ingresos y gastos directos</div>
+          </div>
+
+          <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('metricas')">
+            <div class="card-icon icon-orange">📈</div>
+            <div class="card-title">Rendimiento Mensual</div>
+            <div class="card-desc">Ventas por día y análisis de flujo</div>
+          </div>
+
+          <div class="app-card" onclick="verSubModuloAdmin('stock-bebidas')">
+            <div class="card-icon icon-slate">🥤</div>
+            <div class="card-title">Stock Bebidas</div>
+            <div class="card-desc">Stock sugerido y catálogo de bebidas</div>
+          </div>
+
+          <div class="app-card" onclick="verSubModuloAdmin('insumos')">
+            <div class="card-icon icon-purple">🍽️</div>
+            <div class="card-title">Insumos / Doblados</div>
+            <div class="card-desc">Servilletas, vasos, tenedores, etc.</div>
+          </div>
+
+          <div class="app-card" onclick="verSubModuloAdmin('checklist')">
+            <div class="card-icon icon-orange">📋</div>
+            <div class="card-title">Checklist Cocina</div>
+            <div class="card-desc">Tareas de preparación diarias</div>
+          </div>
+
+          <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('usuarios')">
+            <div class="card-icon icon-purple">👥</div>
+            <div class="card-title">Usuarios / PINs</div>
+            <div class="card-desc">Personal y permisos de acceso</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CONTENEDOR DE SUBMÓDULOS -->
+      <div id="vista-submodulo" style="display: none;">
+        <button class="btn-secondary" onclick="volverAlHub()" style="margin-bottom: 12px; width: auto;">← Volver al Hub</button>
+        
+        <div id="pos-container" style="display: none;"></div>
+        <div id="almacen-container" style="display: none;"></div>
+        <div id="finanzas-container" style="display: none;"></div>
+        <div id="metricas-container" style="display: none;"></div>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="volverAlHub()">
+        <span class="nav-icon">🏠</span>
+        Hub
+      </button>
+      <button class="nav-item" onclick="verSubModuloAdmin('pos')">
+        <span class="nav-icon">📋</span>
+        POS
+      </button>
+      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('almacen')">
+        <span class="nav-icon">📦</span>
+        Almacén
+      </button>
+      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('metricas')">
+        <span class="nav-icon">📊</span>
+        Métricas
+      </button>
+      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('finanzas')">
+        <span class="nav-icon">💵</span>
+        Finanzas
+      </button>
+    </nav>
+  </div>
+
+  <!-- CONTROL DE LOGIN Y ROLES -->
   <script>
-    // Objeto global de datos
     window.db = window.db || { bebidas: [] };
+
+    // PINs por defecto del sistema
+    const ROLES = {
+      '1234': { nombre: 'Administrador', esAdmin: true },
+      '2222': { nombre: 'Encargada', esAdmin: false },
+      '3333': { nombre: 'Mesera', esAdmin: false }
+    };
+
+    function validarAccesoPin() {
+      const pinIngresado = document.getElementById('input-pin-user').value;
+      const usuario = ROLES[pinIngresado];
+
+      if (usuario) {
+        document.getElementById('login-error').style.display = 'none';
+        document.getElementById('vista-login').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+        
+        document.getElementById('user-role-badge').innerText = usuario.nombre;
+        
+        // Aplicar permisos visuales según rol
+        const elementosAdmin = document.querySelectorAll('.modulo-solo-admin');
+        elementosAdmin.forEach(el => {
+          el.style.display = usuario.esAdmin ? '' : 'none';
+        });
+
+        const kpiPanel = document.getElementById('kpi-panel-admin');
+        if (kpiPanel) kpiPanel.style.display = usuario.esAdmin ? 'block' : 'none';
+
+        document.getElementById('input-pin-user').value = '';
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+
+    function cerrarSesion() {
+      document.getElementById('app-content').style.display = 'none';
+      document.getElementById('vista-login').style.display = 'flex';
+      volverAlHub();
+    }
 
     function verSubModuloAdmin(modulo) {
       document.getElementById('vista-hub').style.display = 'none';
       document.getElementById('vista-submodulo').style.display = 'block';
 
-      // Ocultar todos los contenedores internos
       document.getElementById('pos-container').style.display = 'none';
       document.getElementById('almacen-container').style.display = 'none';
 
