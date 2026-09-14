@@ -39,12 +39,21 @@
     .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
     .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; cursor: pointer; }
 
-    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-space-around; padding: 8px 0; }
+    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; }
     .nav-item { border: none; background: none; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; cursor: pointer; }
     .nav-item.active { color: var(--primary); font-weight: bold; }
     .nav-icon { font-size: 1.2rem; margin-bottom: 2px; }
 
     input.input-pin { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1.2rem; text-align: center; letter-spacing: 4px; margin: 10px 0; }
+    
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: #475569; }
+    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
+    .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
+    .txt-green { color: #16a34a; font-weight: bold; }
+    .txt-red { color: #dc2626; font-weight: bold; }
+    .bar-container { background: #e2e8f0; border-radius: 4px; height: 8px; width: 100%; margin-top: 4px; overflow: hidden; }
+    .bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease; }
   </style>
 </head>
 <body>
@@ -79,19 +88,19 @@
           <div class="kpi-grid">
             <div class="kpi-item">
               <div class="kpi-title">Bancolombia</div>
-              <div class="kpi-value">$69</div>
+              <div class="kpi-value" id="saldo-bancolombia">$0</div>
             </div>
             <div class="kpi-item">
               <div class="kpi-title">Nequi</div>
-              <div class="kpi-value">$400</div>
+              <div class="kpi-value" id="saldo-nequi">$0</div>
             </div>
             <div class="kpi-item">
               <div class="kpi-title">Efectivo</div>
-              <div class="kpi-value">$40,498</div>
+              <div class="kpi-value" id="saldo-efectivo">$0</div>
             </div>
             <div class="kpi-item">
               <div class="kpi-title">Datáfono</div>
-              <div class="kpi-value">$0</div>
+              <div class="kpi-value" id="saldo-datafono">$0</div>
             </div>
           </div>
         </div>
@@ -103,7 +112,7 @@
           <div class="app-card" onclick="verSubModuloAdmin('pos')">
             <div class="card-icon icon-orange">🍽️</div>
             <div class="card-title">Punto de Venta (POS)</div>
-            <div class="card-desc">Control de mesas, barra y tomar pedidos</div>
+            <div class="card-desc">Control de ventas y tomar pedidos</div>
           </div>
 
           <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('almacen')">
@@ -155,31 +164,198 @@
       <div id="vista-submodulo" style="display: none;">
         <button class="btn-secondary" onclick="volverAlHub()" style="margin-bottom: 12px; width: auto;">← Volver al Hub</button>
         
+        <!-- POS -->
         <div id="pos-container" style="display: none;"></div>
-        <div id="almacen-container" style="display: none;"></div>
-        <div id="finanzas-container" style="display: none;"></div>
-        <div id="metricas-container" style="display: none;"></div>
+
+        <!-- ALMACÉN CENTRAL -->
+        <div id="almacen-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">📦 Almacén Central (Bodega)</h3>
+          
+          <div class="inner-card">
+            <h4>Registrar Movimiento de Entrada / Salida</h4>
+            <form onsubmit="registrarMovimientoAlmacen(event)" style="margin-top: 8px;">
+              <div class="form-group">
+                <label>Seleccionar Ítem:</label>
+                <select id="almacen-item-select" required></select>
+              </div>
+              <div class="form-group">
+                <label>Tipo de Operación:</label>
+                <select id="almacen-tipo-op">
+                  <option value="entrada">📥 Entrada (Compra / Reposición)</option>
+                  <option value="salida">📤 Salida (Traslado a Cocina/Punto)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Cantidad:</label>
+                <input type="number" step="0.1" id="almacen-cant-op" placeholder="0" required>
+              </div>
+              <button type="submit" class="btn-primary">Registrar Operación</button>
+            </form>
+          </div>
+
+          <div class="inner-card">
+            <h4>Crear Nuevo Producto en Bodega</h4>
+            <form onsubmit="agregarNuevoItemAlmacen(event)" style="margin-top: 8px;">
+              <div class="form-group">
+                <label>Nombre del Producto:</label>
+                <input type="text" id="nuevo-almacen-nombre" placeholder="Ej. Harina (Bulto 25kg)" required>
+              </div>
+              <div class="form-group">
+                <label>Unidad de Medida:</label>
+                <input type="text" id="nuevo-almacen-unidad" placeholder="Bulto, Paca, Kg, Caja" required>
+              </div>
+              <div class="form-group">
+                <label>Stock Inicial:</label>
+                <input type="number" step="0.1" id="nuevo-almacen-stock" placeholder="0" required>
+              </div>
+              <button type="submit" class="btn-secondary">➕ Crear en Bodega</button>
+            </form>
+          </div>
+
+          <h4 style="margin: 12px 0 8px 0;">Inventario Actual en Bodega</h4>
+          <div id="admin-lista-almacen"></div>
+        </div>
+
+        <!-- FINANZAS -->
+        <div id="finanzas-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">💵 Caja y Finanzas Directas</h3>
+          <div class="inner-card">
+            <form onsubmit="registrarMovimientoAdmin(event)">
+              <div class="form-group">
+                <label>Tipo:</label>
+                <select id="admin-fin-tipo">
+                  <option value="ingreso">🟢 Ingreso Directo</option>
+                  <option value="gasto">🔴 Gasto Directo</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Concepto:</label>
+                <input type="text" id="admin-fin-concepto" placeholder="Ej. Pago de Factura / Base" required>
+              </div>
+              <div class="form-group">
+                <label>Valor ($):</label>
+                <input type="number" id="admin-fin-valor" placeholder="$0" required>
+              </div>
+              <div class="form-group">
+                <label>Cuenta / Medio:</label>
+                <select id="admin-fin-cuenta">
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                  <option value="Datáfono">Datáfono</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-primary">Guardar Transacción</button>
+            </form>
+          </div>
+
+          <h4 style="margin: 12px 0 8px 0;">Historial Reciente</h4>
+          <div id="lista-movimientos-diarios-finanzas"></div>
+        </div>
+
+        <!-- MÉTRICAS -->
+        <div id="metricas-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">📈 Rendimiento Mensual</h3>
+          <div class="inner-card">
+            <div class="form-group">
+              <label>Seleccionar Mes:</label>
+              <input type="month" id="desempeno-mes-select" onchange="renderRendimientoMensual()">
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.85rem;">
+              <div>Ventas: <strong id="resumen-mes-ventas" class="txt-green">$0</strong></div>
+              <div>Gastos: <strong id="resumen-mes-gastos" class="txt-red">$0</strong></div>
+              <div>Neto: <strong id="resumen-mes-utilidad" style="color:#0284c7;">$0</strong></div>
+            </div>
+          </div>
+
+          <h4 style="margin: 12px 0 8px 0;">Promedio de Ventas por Día</h4>
+          <div id="desempeno-grafica-dias" class="inner-card"></div>
+        </div>
+
+        <!-- STOCK BEBIDAS -->
+        <div id="bebidas-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">🥤 Gestión de Bebidas</h3>
+          <div class="inner-card">
+            <form onsubmit="agregarNuevaBebida(event)">
+              <div class="form-group"><label>Nombre:</label><input type="text" id="nueva-bebida-nombre" required></div>
+              <div class="form-group"><label>Precio Venta ($):</label><input type="number" id="nueva-bebida-precio" required></div>
+              <div class="form-group"><label>Stock Actual:</label><input type="number" id="nueva-bebida-stock" required></div>
+              <div class="form-group"><label>Stock Sugerido:</label><input type="number" id="nueva-bebida-sugerido" required></div>
+              <button type="submit" class="btn-primary">➕ Guardar Bebida</button>
+            </form>
+          </div>
+          <div id="admin-lista-bebidas"></div>
+        </div>
+
+        <!-- INSUMOS / DOBLADOS -->
+        <div id="insumos-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">🍽️ Insumos y Desechables</h3>
+          <div class="inner-card">
+            <form onsubmit="agregarNuevoInsumoDesechable(event)">
+              <div class="form-group"><label>Nombre:</label><input type="text" id="nuevo-insumo-desechable-nombre" required></div>
+              <div class="form-group"><label>Unidad:</label><input type="text" id="nuevo-insumo-desechable-unidad" placeholder="Paquete, Caja, Ciento" required></div>
+              <div class="form-group"><label>Stock Actual:</label><input type="number" id="nuevo-insumo-desechable-stock" required></div>
+              <div class="form-group"><label>Sugerido:</label><input type="number" id="nuevo-insumo-desechable-sugerido" required></div>
+              <button type="submit" class="btn-primary">➕ Guardar Insumo</button>
+            </form>
+          </div>
+          <div id="admin-lista-insumos"></div>
+        </div>
+
+        <!-- CHECKLIST COCINA -->
+        <div id="checklist-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">📋 Tareas Checklist Cocina</h3>
+          <div class="inner-card">
+            <form onsubmit="agregarNuevaTarea(event)">
+              <div class="form-group"><label>Nueva Tarea:</label><input type="text" id="nueva-tarea-nombre" placeholder="Ej. Preparar salsa de ajo" required></div>
+              <button type="submit" class="btn-primary">➕ Agregar Tarea</button>
+            </form>
+          </div>
+          <div id="admin-lista-checklist"></div>
+        </div>
+
+        <!-- USUARIOS -->
+        <div id="usuarios-container" style="display: none;">
+          <h3 style="margin-bottom: 10px;">👥 Gestión de Usuarios</h3>
+          <div class="inner-card">
+            <form onsubmit="agregarNuevoUsuario(event)">
+              <div class="form-group"><label>Nombre de Usuario:</label><input type="text" id="nuevo-user-nombre" required></div>
+              <div class="form-group"><label>PIN (4 dígitos):</label><input type="password" maxlength="4" id="nuevo-user-pin" required></div>
+              <div class="form-group">
+                <label>Rol:</label>
+                <select id="nuevo-user-rol">
+                  <option value="admin">Administrador</option>
+                  <option value="encargada">Encargada</option>
+                  <option value="cocina">Cocina</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-primary">➕ Crear Usuario</button>
+            </form>
+          </div>
+          <div id="admin-lista-usuarios"></div>
+        </div>
+
       </div>
     </main>
 
     <nav class="bottom-nav">
-      <button class="nav-item active" onclick="volverAlHub()">
+      <button class="nav-item active" id="nav-item-hub" onclick="volverAlHub()">
         <span class="nav-icon">🏠</span>
         Hub
       </button>
-      <button class="nav-item" onclick="verSubModuloAdmin('pos')">
+      <button class="nav-item" id="nav-item-pos" onclick="verSubModuloAdmin('pos')">
         <span class="nav-icon">📋</span>
         POS
       </button>
-      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('almacen')">
+      <button class="nav-item modulo-solo-admin" id="nav-item-almacen" onclick="verSubModuloAdmin('almacen')">
         <span class="nav-icon">📦</span>
         Almacén
       </button>
-      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('metricas')">
+      <button class="nav-item modulo-solo-admin" id="nav-item-metricas" onclick="verSubModuloAdmin('metricas')">
         <span class="nav-icon">📊</span>
         Métricas
       </button>
-      <button class="nav-item modulo-solo-admin" onclick="verSubModuloAdmin('finanzas')">
+      <button class="nav-item modulo-solo-admin" id="nav-item-finanzas" onclick="verSubModuloAdmin('finanzas')">
         <span class="nav-icon">💵</span>
         Finanzas
       </button>
@@ -187,9 +363,9 @@
   </div>
 
   <!-- CONTROL DE LOGIN Y ROLES -->
+  <script src="app.js"></script>
+  <script src="pos.js"></script>
   <script>
-    window.db = window.db || { bebidas: [] };
-
     // PINs por defecto del sistema
     const ROLES = {
       '1234': { nombre: 'Administrador', esAdmin: true },
@@ -217,6 +393,10 @@
         const kpiPanel = document.getElementById('kpi-panel-admin');
         if (kpiPanel) kpiPanel.style.display = usuario.esAdmin ? 'block' : 'none';
 
+        if (typeof cargarAdminHub === 'function') {
+          cargarAdminHub();
+        }
+
         document.getElementById('input-pin-user').value = '';
       } else {
         document.getElementById('login-error').style.display = 'block';
@@ -229,24 +409,88 @@
       volverAlHub();
     }
 
+    function ocultarTodosSubmodulos() {
+      const ids = [
+        'pos-container',
+        'almacen-container',
+        'finanzas-container',
+        'metricas-container',
+        'bebidas-container',
+        'insumos-container',
+        'checklist-container',
+        'usuarios-container'
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+
     function verSubModuloAdmin(modulo) {
       document.getElementById('vista-hub').style.display = 'none';
       document.getElementById('vista-submodulo').style.display = 'block';
 
-      document.getElementById('pos-container').style.display = 'none';
-      document.getElementById('almacen-container').style.display = 'none';
+      ocultarTodosSubmodulos();
+
+      // Desmarcar ítems del nav
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 
       if (modulo === 'pos') {
-        document.getElementById('pos-container').style.display = 'block';
+        const posCont = document.getElementById('pos-container');
+        if (posCont) posCont.style.display = 'block';
+        const navBtn = document.getElementById('nav-item-pos');
+        if (navBtn) navBtn.classList.add('active');
         if (typeof renderPOS === 'function') renderPOS();
+      } else if (modulo === 'almacen') {
+        const almacCont = document.getElementById('almacen-container');
+        if (almacCont) almacCont.style.display = 'block';
+        const navBtn = document.getElementById('nav-item-almacen');
+        if (navBtn) navBtn.classList.add('active');
+        if (typeof renderAlmacenAdmin === 'function') renderAlmacenAdmin();
+      } else if (modulo === 'finanzas') {
+        const finCont = document.getElementById('finanzas-container');
+        if (finCont) finCont.style.display = 'block';
+        const navBtn = document.getElementById('nav-item-finanzas');
+        if (navBtn) navBtn.classList.add('active');
+        if (typeof renderFinanzasAdmin === 'function') renderFinanzasAdmin();
+      } else if (modulo === 'metricas') {
+        const metCont = document.getElementById('metricas-container');
+        if (metCont) metCont.style.display = 'block';
+        const navBtn = document.getElementById('nav-item-metricas');
+        if (navBtn) navBtn.classList.add('active');
+        if (typeof renderDesempenoAdmin === 'function') renderDesempenoAdmin();
+      } else if (modulo === 'stock-bebidas') {
+        const bebCont = document.getElementById('bebidas-container');
+        if (bebCont) bebCont.style.display = 'block';
+        if (typeof renderListaBebidasAdmin === 'function') renderListaBebidasAdmin();
+      } else if (modulo === 'insumos') {
+        const insCont = document.getElementById('insumos-container');
+        if (insCont) insCont.style.display = 'block';
+        if (typeof renderListaInsumosAdmin === 'function') renderListaInsumosAdmin();
+      } else if (modulo === 'checklist') {
+        const chkCont = document.getElementById('checklist-container');
+        if (chkCont) chkCont.style.display = 'block';
+        if (typeof renderListaChecklistAdmin === 'function') renderListaChecklistAdmin();
+      } else if (modulo === 'usuarios') {
+        const usrCont = document.getElementById('usuarios-container');
+        if (usrCont) usrCont.style.display = 'block';
+        if (typeof renderListaUsuariosAdmin === 'function') renderListaUsuariosAdmin();
       }
     }
 
     function volverAlHub() {
       document.getElementById('vista-submodulo').style.display = 'none';
       document.getElementById('vista-hub').style.display = 'block';
+      ocultarTodosSubmodulos();
+
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+      const hubBtn = document.getElementById('nav-item-hub');
+      if (hubBtn) hubBtn.classList.add('active');
+
+      if (typeof cargarAdminHub === 'function') {
+        cargarAdminHub();
+      }
     }
   </script>
-  <script src="pos.js"></script>
 </body>
 </html>
