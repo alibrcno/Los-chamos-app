@@ -3,223 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Los Chamos Admin</title>
-  <style>
-    :root {
-      --primary: #ea580c;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
-    header { background: #ffffff; padding: 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .logo { font-weight: bold; font-size: 1.2rem; color: var(--primary); }
-    .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-    
-    .kpi-card { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; text-align: center; }
-    .kpi-item { background: rgba(255,255,255,0.1); padding: 8px 4px; border-radius: 8px; }
-    .kpi-title { font-size: 0.65rem; opacity: 0.8; }
-    .kpi-value { font-size: 0.85rem; font-weight: bold; margin-top: 2px; color: #38bdf8; }
-
-    .grid-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
-    .app-card { background: white; border-radius: 14px; padding: 15px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; }
-    .card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 10px; }
-    .icon-orange { background: #fff7ed; color: #ea580c; }
-    .icon-slate { background: #f1f5f9; color: #475569; }
-    .icon-green { background: #f0fdf4; color: #16a34a; }
-    .icon-purple { background: #faf5ff; color: #9333ea; }
-
-    .card-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; color: #0f172a; }
-    .card-desc { font-size: 0.75rem; color: #64748b; line-height: 1.2; }
-
-    .inner-card { background: white; border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; }
-    
-    .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
-    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; cursor: pointer; }
-
-    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 8px 0; }
-    .nav-item { border: none; background: none; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: #64748b; cursor: pointer; }
-    .nav-item.active { color: var(--primary); font-weight: bold; }
-    .nav-icon { font-size: 1.2rem; margin-bottom: 2px; }
-
-    input.input-pin { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1.2rem; text-align: center; letter-spacing: 4px; margin: 10px 0; }
-    
-    .form-group { margin-bottom: 10px; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: #475569; }
-    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
-    .daily-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
-    .txt-green { color: #16a34a; font-weight: bold; }
-    .txt-red { color: #dc2626; font-weight: bold; }
-  </style>
+  <title>Los Chamos System</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- PANTALLA DE LOGIN POR PIN -->
-  <div id="vista-login" class="container" style="display: flex; flex-direction: column; justify-content: center; min-height: 80vh;">
+  <!-- LOGIN POR PIN -->
+  <div id="vista-login" class="container" style="display: flex; flex-direction: column; justify-content: center; min-height: 85vh;">
     <div class="inner-card" style="text-align: center; padding: 25px;">
       <h2 style="color: var(--primary); margin-bottom: 5px;">Los Chamos POS</h2>
-      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Ingresa tu PIN de acceso</p>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">Ingresa tu PIN de acceso</p>
       
       <input type="password" id="input-pin-user" class="input-pin" maxlength="4" placeholder="****" autofocus>
       <button onclick="validarAccesoPin()" class="btn-primary">Ingresar</button>
-      <div id="login-error" style="color: #ef4444; font-size: 0.75rem; margin-top: 8px; display: none;">PIN incorrecto</div>
+      <div id="login-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 10px; display: none;">⚠️ PIN no válido</div>
     </div>
   </div>
 
-  <!-- PANTALLA PRINCIPAL DE LA APP -->
-  <div id="app-content" style="display: none;">
+  <!-- APLICACIÓN PRINCIPAL -->
+  <div id="app-content" class="hidden">
     <header>
-      <div class="logo">Los Chamos Admin</div>
+      <div class="logo">Los Chamos</div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span id="user-role-badge" style="font-size:0.75rem; background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:12px; font-weight:bold;">Admin</span>
-        <button onclick="cerrarSesion()" style="border:none; background:none; font-size:0.75rem; color:#64748b; cursor:pointer;">🔒 Salir</button>
+        <span id="user-role-badge" style="font-size:0.75rem; background:#334155; color:#38bdf8; padding:4px 8px; border-radius:12px; font-weight:bold;">Admin</span>
+        <button onclick="cerrarSesion()" style="border:none; background:none; font-size:0.8rem; color:#94a3b8; cursor:pointer;">🔒 Salir</button>
       </div>
     </header>
 
     <main class="container">
-      <!-- VISTA PRINCIPAL (HUB) -->
+      <!-- HUB CENTRAL -->
       <div id="vista-hub">
         <div class="kpi-card" id="kpi-panel-admin">
           <div style="font-size: 0.8rem; opacity: 0.9;">Disponible en Cuentas:</div>
           <div class="kpi-grid">
-            <div class="kpi-item">
-              <div class="kpi-title">Bancolombia</div>
-              <div class="kpi-value" id="saldo-bancolombia">$0</div>
-            </div>
-            <div class="kpi-item">
-              <div class="kpi-title">Nequi</div>
-              <div class="kpi-value" id="saldo-nequi">$0</div>
-            </div>
-            <div class="kpi-item">
-              <div class="kpi-title">Efectivo</div>
-              <div class="kpi-value" id="saldo-efectivo">$0</div>
-            </div>
-            <div class="kpi-item">
-              <div class="kpi-title">Datáfono</div>
-              <div class="kpi-value" id="saldo-datafono">$0</div>
-            </div>
+            <div class="kpi-item"><div class="kpi-title">Bancolombia</div><div class="kpi-value" id="saldo-bancolombia">$0</div></div>
+            <div class="kpi-item"><div class="kpi-title">Nequi</div><div class="kpi-value" id="saldo-nequi">$0</div></div>
+            <div class="kpi-item"><div class="kpi-title">Efectivo</div><div class="kpi-value" id="saldo-efectivo">$0</div></div>
+            <div class="kpi-item"><div class="kpi-title">Datáfono</div><div class="kpi-value" id="saldo-datafono">$0</div></div>
           </div>
         </div>
 
-        <h3 style="font-size: 0.95rem; color:#475569; margin-top: 15px;">Módulos de Gestión</h3>
+        <h3 style="font-size: 0.95rem; color:#cbd5e1; margin-top: 15px;">Módulos de Gestión</h3>
         <div class="grid-cards">
-          
           <div class="app-card" onclick="verSubModuloAdmin('pos')">
-            <div class="card-icon icon-orange">🍽️</div>
-            <div class="card-title">Punto de Venta (POS)</div>
-            <div class="card-desc">Control de ventas y tomar pedidos</div>
+            <div class="card-icon">🍽️</div>
+            <div class="card-title">Punto de Venta</div>
+            <div class="card-desc">Control de comandas y mesas</div>
           </div>
 
           <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('almacen')">
-            <div class="card-icon icon-slate">📦</div>
+            <div class="card-icon">📦</div>
             <div class="card-title">Almacén Central</div>
-            <div class="card-desc">Bodega general, compras e insumos</div>
+            <div class="card-desc">Bodega e insumos generales</div>
           </div>
 
           <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('finanzas')">
-            <div class="card-icon icon-green">💵</div>
+            <div class="card-icon">💵</div>
             <div class="card-title">Caja / Finanzas</div>
-            <div class="card-desc">Registrar ingresos y gastos directos</div>
+            <div class="card-desc">Ingresos y gastos directos</div>
           </div>
 
           <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('metricas')">
-            <div class="card-icon icon-orange">📈</div>
-            <div class="card-title">Rendimiento Mensual</div>
-            <div class="card-desc">Ventas por día y análisis de flujo</div>
+            <div class="card-icon">📈</div>
+            <div class="card-title">Rendimiento</div>
+            <div class="card-desc">Promedios y análisis mensual</div>
           </div>
 
           <div class="app-card" onclick="verSubModuloAdmin('stock-bebidas')">
-            <div class="card-icon icon-slate">🥤</div>
+            <div class="card-icon">🥤</div>
             <div class="card-title">Stock Bebidas</div>
-            <div class="card-desc">Stock sugerido y catálogo de bebidas</div>
+            <div class="card-desc">Inventario y sugeridos</div>
           </div>
 
           <div class="app-card" onclick="verSubModuloAdmin('insumos')">
-            <div class="card-icon icon-purple">🍽️</div>
-            <div class="card-title">Insumos / Doblados</div>
-            <div class="card-desc">Servilletas, vasos, tenedores, etc.</div>
+            <div class="card-icon">🧻</div>
+            <div class="card-title">Desechables</div>
+            <div class="card-desc">Empaques e insumos</div>
           </div>
 
           <div class="app-card" onclick="verSubModuloAdmin('checklist')">
-            <div class="card-icon icon-orange">📋</div>
+            <div class="card-icon">📋</div>
             <div class="card-title">Checklist Cocina</div>
-            <div class="card-desc">Tareas de preparación diarias</div>
+            <div class="card-desc">Tareas de preparación</div>
           </div>
 
           <div class="app-card modulo-solo-admin" onclick="verSubModuloAdmin('usuarios')">
-            <div class="card-icon icon-purple">👥</div>
+            <div class="card-icon">👥</div>
             <div class="card-title">Usuarios / PINs</div>
-            <div class="card-desc">Personal y permisos de acceso</div>
+            <div class="card-desc">Permisos de personal</div>
           </div>
-
         </div>
       </div>
 
-      <!-- CONTENEDOR DE SUBMÓDULOS -->
-      <div id="vista-submodulo" style="display: none;">
+      <!-- CONTENEDOR VISTAS SECUNDARIAS -->
+      <div id="vista-submodulo" class="hidden">
         <button class="btn-secondary" onclick="volverAlHub()" style="margin-bottom: 12px; width: auto;">← Volver al Hub</button>
-        
-        <!-- POS -->
-        <div id="pos-container" style="display: none;">
-          <h3>🍽️ Punto de Venta (POS)</h3>
-          <div id="pos-content" style="margin-top: 10px;">
-            <!-- Renderizado dinámico de POS -->
-          </div>
-        </div>
 
-        <!-- ALMACÉN CENTRAL -->
-        <div id="almacen-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">📦 Almacén Central (Bodega)</h3>
+        <div id="pos-container" class="hidden"></div>
+
+        <div id="almacen-container" class="hidden">
+          <h3 style="margin-bottom: 10px;">📦 Almacén Central</h3>
           <div class="inner-card">
-            <h4>Registrar Movimiento de Entrada / Salida</h4>
+            <h4>Movimiento en Bodega</h4>
             <form onsubmit="registrarMovimientoAlmacen(event)" style="margin-top: 8px;">
+              <div class="form-group"><label>Ítem:</label><select id="almacen-item-select" required></select></div>
               <div class="form-group">
-                <label>Seleccionar Ítem:</label>
-                <select id="almacen-item-select" required></select>
-              </div>
-              <div class="form-group">
-                <label>Tipo de Operación:</label>
+                <label>Operación:</label>
                 <select id="almacen-tipo-op">
-                  <option value="entrada">📥 Entrada (Compra / Reposición)</option>
-                  <option value="salida">📤 Salida (Traslado a Cocina/Punto)</option>
+                  <option value="entrada">📥 Entrada</option>
+                  <option value="salida">📤 Salida</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>Cantidad:</label>
-                <input type="number" step="0.1" id="almacen-cant-op" placeholder="0" required>
-              </div>
-              <button type="submit" class="btn-primary">Registrar Operación</button>
+              <div class="form-group"><label>Cantidad:</label><input type="number" step="0.1" id="almacen-cant-op" required></div>
+              <button type="submit" class="btn-primary">Registrar</button>
             </form>
           </div>
-
-          <div class="inner-card">
-            <h4>Crear Nuevo Producto en Bodega</h4>
-            <form onsubmit="agregarNuevoItemAlmacen(event)" style="margin-top: 8px;">
-              <div class="form-group">
-                <label>Nombre del Producto:</label>
-                <input type="text" id="nuevo-almacen-nombre" placeholder="Ej. Harina (Bulto 25kg)" required>
-              </div>
-              <div class="form-group">
-                <label>Unidad de Medida:</label>
-                <input type="text" id="nuevo-almacen-unidad" placeholder="Bulto, Paca, Kg, Caja" required>
-              </div>
-              <div class="form-group">
-                <label>Stock Inicial:</label>
-                <input type="number" step="0.1" id="nuevo-almacen-stock" placeholder="0" required>
-              </div>
-              <button type="submit" class="btn-secondary">➕ Crear en Bodega</button>
-            </form>
-          </div>
-
-          <h4 style="margin: 12px 0 8px 0;">Inventario Actual en Bodega</h4>
           <div id="admin-lista-almacen"></div>
         </div>
 
-        <!-- FINANZAS -->
-        <div id="finanzas-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">💵 Caja y Finanzas Directas</h3>
+        <div id="finanzas-container" class="hidden">
+          <h3 style="margin-bottom: 10px;">💵 Finanzas Directas</h3>
           <div class="inner-card">
             <form onsubmit="registrarMovimientoAdmin(event)">
               <div class="form-group">
@@ -229,16 +132,10 @@
                   <option value="gasto">🔴 Gasto Directo</option>
                 </select>
               </div>
+              <div class="form-group"><label>Concepto:</label><input type="text" id="admin-fin-concepto" required></div>
+              <div class="form-group"><label>Monto ($):</label><input type="number" id="admin-fin-valor" required></div>
               <div class="form-group">
-                <label>Concepto:</label>
-                <input type="text" id="admin-fin-concepto" placeholder="Ej. Pago de Factura / Base" required>
-              </div>
-              <div class="form-group">
-                <label>Valor ($):</label>
-                <input type="number" id="admin-fin-valor" placeholder="$0" required>
-              </div>
-              <div class="form-group">
-                <label>Cuenta / Medio:</label>
+                <label>Cuenta:</label>
                 <select id="admin-fin-cuenta">
                   <option value="Efectivo">Efectivo</option>
                   <option value="Nequi">Nequi</option>
@@ -249,253 +146,56 @@
               <button type="submit" class="btn-primary">Guardar Transacción</button>
             </form>
           </div>
-
-          <h4 style="margin: 12px 0 8px 0;">Historial Reciente</h4>
           <div id="lista-movimientos-diarios-finanzas"></div>
         </div>
 
-        <!-- MÉTRICAS -->
-        <div id="metricas-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">📈 Rendimiento Mensual</h3>
+        <div id="metricas-container" class="hidden">
+          <h3 style="margin-bottom: 10px;">📈 Análisis Mensual</h3>
           <div class="inner-card">
-            <div class="form-group">
-              <label>Seleccionar Mes:</label>
-              <input type="month" id="desempeno-mes-select" onchange="renderRendimientoMensual()">
-            </div>
+            <div class="form-group"><label>Mes:</label><input type="month" id="desempeno-mes-select" onchange="renderRendimientoMensual()"></div>
             <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.85rem;">
               <div>Ventas: <strong id="resumen-mes-ventas" class="txt-green">$0</strong></div>
               <div>Gastos: <strong id="resumen-mes-gastos" class="txt-red">$0</strong></div>
-              <div>Neto: <strong id="resumen-mes-utilidad" style="color:#0284c7;">$0</strong></div>
+              <div>Neto: <strong id="resumen-mes-utilidad" style="color:#38bdf8;">$0</strong></div>
             </div>
           </div>
-
-          <h4 style="margin: 12px 0 8px 0;">Promedio de Ventas por Día</h4>
           <div id="desempeno-grafica-dias" class="inner-card"></div>
         </div>
 
-        <!-- STOCK BEBIDAS -->
-        <div id="bebidas-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">🥤 Gestión de Bebidas</h3>
+        <div id="bebidas-container" class="hidden"><div id="admin-lista-bebidas"></div></div>
+        <div id="insumos-container" class="hidden"><div id="admin-lista-insumos"></div></div>
+        <div id="checklist-container" class="hidden"><div id="admin-lista-checklist"></div></div>
+        <div id="usuarios-container" class="hidden">
           <div class="inner-card">
-            <form onsubmit="agregarNuevaBebida(event)">
-              <div class="form-group"><label>Nombre:</label><input type="text" id="nueva-bebida-nombre" required></div>
-              <div class="form-group"><label>Precio Venta ($):</label><input type="number" id="nueva-bebida-precio" required></div>
-              <div class="form-group"><label>Stock Actual:</label><input type="number" id="nueva-bebida-stock" required></div>
-              <div class="form-group"><label>Stock Sugerido:</label><input type="number" id="nueva-bebida-sugerido" required></div>
-              <button type="submit" class="btn-primary">➕ Guardar Bebida</button>
-            </form>
-          </div>
-          <div id="admin-lista-bebidas"></div>
-        </div>
-
-        <!-- INSUMOS / DOBLADOS -->
-        <div id="insumos-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">🍽️ Insumos y Desechables</h3>
-          <div class="inner-card">
-            <form onsubmit="agregarNuevoInsumoDesechable(event)">
-              <div class="form-group"><label>Nombre:</label><input type="text" id="nuevo-insumo-desechable-nombre" required></div>
-              <div class="form-group"><label>Unidad:</label><input type="text" id="nuevo-insumo-desechable-unidad" placeholder="Paquete, Caja, Ciento" required></div>
-              <div class="form-group"><label>Stock Actual:</label><input type="number" id="nuevo-insumo-desechable-stock" required></div>
-              <div class="form-group"><label>Sugerido:</label><input type="number" id="nuevo-insumo-desechable-sugerido" required></div>
-              <button type="submit" class="btn-primary">➕ Guardar Insumo</button>
-            </form>
-          </div>
-          <div id="admin-lista-insumos"></div>
-        </div>
-
-        <!-- CHECKLIST COCINA -->
-        <div id="checklist-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">📋 Tareas Checklist Cocina</h3>
-          <div class="inner-card">
-            <form onsubmit="agregarNuevaTarea(event)">
-              <div class="form-group"><label>Nueva Tarea:</label><input type="text" id="nueva-tarea-nombre" placeholder="Ej. Preparar salsa de ajo" required></div>
-              <button type="submit" class="btn-primary">➕ Agregar Tarea</button>
-            </form>
-          </div>
-          <div id="admin-lista-checklist"></div>
-        </div>
-
-        <!-- USUARIOS -->
-        <div id="usuarios-container" style="display: none;">
-          <h3 style="margin-bottom: 10px;">👥 Gestión de Usuarios</h3>
-          <div class="inner-card">
-            <form onsubmit="agregarNuevoUsuario(event)">
-              <div class="form-group"><label>Nombre de Usuario:</label><input type="text" id="nuevo-user-nombre" required></div>
+            <h4>Crear Usuario</h4>
+            <form onsubmit="agregarNuevoUsuario(event)" style="margin-top:8px;">
+              <div class="form-group"><label>Usuario:</label><input type="text" id="nuevo-user-nombre" required></div>
               <div class="form-group"><label>PIN (4 dígitos):</label><input type="password" maxlength="4" id="nuevo-user-pin" required></div>
               <div class="form-group">
                 <label>Rol:</label>
                 <select id="nuevo-user-rol">
                   <option value="admin">Administrador</option>
                   <option value="encargada">Encargada</option>
-                  <option value="cocina">Cocina</option>
                 </select>
               </div>
-              <button type="submit" class="btn-primary">➕ Crear Usuario</button>
+              <button type="submit" class="btn-primary">Guardar Usuario</button>
             </form>
           </div>
           <div id="admin-lista-usuarios"></div>
         </div>
-
       </div>
     </main>
 
     <nav class="bottom-nav">
-      <button class="nav-item active" id="nav-item-hub" onclick="volverAlHub()">
-        <span class="nav-icon">🏠</span>
-        Hub
-      </button>
-      <button class="nav-item" id="nav-item-pos" onclick="verSubModuloAdmin('pos')">
-        <span class="nav-icon">📋</span>
-        POS
-      </button>
-      <button class="nav-item modulo-solo-admin" id="nav-item-almacen" onclick="verSubModuloAdmin('almacen')">
-        <span class="nav-icon">📦</span>
-        Almacén
-      </button>
-      <button class="nav-item modulo-solo-admin" id="nav-item-metricas" onclick="verSubModuloAdmin('metricas')">
-        <span class="nav-icon">📊</span>
-        Métricas
-      </button>
-      <button class="nav-item modulo-solo-admin" id="nav-item-finanzas" onclick="verSubModuloAdmin('finanzas')">
-        <span class="nav-icon">💵</span>
-        Finanzas
-      </button>
+      <button class="nav-item active" id="nav-item-hub" onclick="volverAlHub()"><span class="nav-icon">🏠</span>Hub</button>
+      <button class="nav-item" id="nav-item-pos" onclick="verSubModuloAdmin('pos')"><span class="nav-icon">🍽️</span>POS</button>
+      <button class="nav-item modulo-solo-admin" id="nav-item-almacen" onclick="verSubModuloAdmin('almacen')"><span class="nav-icon">📦</span>Almacén</button>
+      <button class="nav-item modulo-solo-admin" id="nav-item-metricas" onclick="verSubModuloAdmin('metricas')"><span class="nav-icon">📊</span>Métricas</button>
+      <button class="nav-item modulo-solo-admin" id="nav-item-finanzas" onclick="verSubModuloAdmin('finanzas')"><span class="nav-icon">💵</span>Finanzas</button>
     </nav>
   </div>
 
-  <!-- CONTROL DE LOGIN Y ROLES -->
   <script src="app.js"></script>
   <script src="pos.js"></script>
-  <script>
-    const ROLES = {
-      '1234': { nombre: 'Administrador', esAdmin: true },
-      '2222': { nombre: 'Encargada', esAdmin: false },
-      '3333': { nombre: 'Mesera', esAdmin: false }
-    };
-
-    function validarAccesoPin() {
-      const pinIngresado = document.getElementById('input-pin-user').value;
-      const usuario = ROLES[pinIngresado];
-
-      if (usuario) {
-        document.getElementById('login-error').style.display = 'none';
-        document.getElementById('vista-login').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
-        
-        document.getElementById('user-role-badge').innerText = usuario.nombre;
-        
-        const elementosAdmin = document.querySelectorAll('.modulo-solo-admin');
-        elementosAdmin.forEach(el => {
-          el.style.display = usuario.esAdmin ? '' : 'none';
-        });
-
-        const kpiPanel = document.getElementById('kpi-panel-admin');
-        if (kpiPanel) kpiPanel.style.display = usuario.esAdmin ? 'block' : 'none';
-
-        if (typeof cargarAdminHub === 'function') {
-          cargarAdminHub();
-        }
-
-        document.getElementById('input-pin-user').value = '';
-      } else {
-        document.getElementById('login-error').style.display = 'block';
-      }
-    }
-
-    function cerrarSesion() {
-      document.getElementById('app-content').style.display = 'none';
-      document.getElementById('vista-login').style.display = 'flex';
-      volverAlHub();
-    }
-
-    function ocultarTodosSubmodulos() {
-      const ids = [
-        'pos-container',
-        'almacen-container',
-        'finanzas-container',
-        'metricas-container',
-        'bebidas-container',
-        'insumos-container',
-        'checklist-container',
-        'usuarios-container'
-      ];
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-    }
-
-    function verSubModuloAdmin(modulo) {
-      document.getElementById('vista-hub').style.display = 'none';
-      document.getElementById('vista-submodulo').style.display = 'block';
-
-      ocultarTodosSubmodulos();
-      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-
-      if (modulo === 'pos') {
-        const posCont = document.getElementById('pos-container');
-        if (posCont) posCont.style.display = 'block';
-        const navBtn = document.getElementById('nav-item-pos');
-        if (navBtn) navBtn.classList.add('active');
-        
-        // Ejecución flexible para funciones pos
-        if (typeof renderPOS === 'function') {
-          renderPOS();
-        } else if (typeof renderPOSAdmin === 'function') {
-          renderPOSAdmin();
-        } else if (typeof initPOS === 'function') {
-          initPOS();
-        }
-      } else if (modulo === 'almacen') {
-        const almacCont = document.getElementById('almacen-container');
-        if (almacCont) almacCont.style.display = 'block';
-        const navBtn = document.getElementById('nav-item-almacen');
-        if (navBtn) navBtn.classList.add('active');
-        if (typeof renderAlmacenAdmin === 'function') renderAlmacenAdmin();
-      } else if (modulo === 'finanzas') {
-        const finCont = document.getElementById('finanzas-container');
-        if (finCont) finCont.style.display = 'block';
-        const navBtn = document.getElementById('nav-item-finanzas');
-        if (navBtn) navBtn.classList.add('active');
-        if (typeof renderFinanzasAdmin === 'function') renderFinanzasAdmin();
-      } else if (modulo === 'metricas') {
-        const metCont = document.getElementById('metricas-container');
-        if (metCont) metCont.style.display = 'block';
-        const navBtn = document.getElementById('nav-item-metricas');
-        if (navBtn) navBtn.classList.add('active');
-        if (typeof renderDesempenoAdmin === 'function') renderDesempenoAdmin();
-      } else if (modulo === 'stock-bebidas') {
-        const bebCont = document.getElementById('bebidas-container');
-        if (bebCont) bebCont.style.display = 'block';
-        if (typeof renderListaBebidasAdmin === 'function') renderListaBebidasAdmin();
-      } else if (modulo === 'insumos') {
-        const insCont = document.getElementById('insumos-container');
-        if (insCont) insCont.style.display = 'block';
-        if (typeof renderListaInsumosAdmin === 'function') renderListaInsumosAdmin();
-      } else if (modulo === 'checklist') {
-        const chkCont = document.getElementById('checklist-container');
-        if (chkCont) chkCont.style.display = 'block';
-        if (typeof renderListaChecklistAdmin === 'function') renderListaChecklistAdmin();
-      } else if (modulo === 'usuarios') {
-        const usrCont = document.getElementById('usuarios-container');
-        if (usrCont) usrCont.style.display = 'block';
-        if (typeof renderListaUsuariosAdmin === 'function') renderListaUsuariosAdmin();
-      }
-    }
-
-    function volverAlHub() {
-      document.getElementById('vista-submodulo').style.display = 'none';
-      document.getElementById('vista-hub').style.display = 'block';
-      ocultarTodosSubmodulos();
-
-      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-      const hubBtn = document.getElementById('nav-item-hub');
-      if (hubBtn) hubBtn.classList.add('active');
-
-      if (typeof cargarAdminHub === 'function') {
-        cargarAdminHub();
-      }
-    }
-  </script>
 </body>
 </html>
